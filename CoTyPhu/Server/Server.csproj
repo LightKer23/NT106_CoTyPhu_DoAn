@@ -7,4 +7,16 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Application\GameEngine\" />
+    <Folder Include="Application\Services\" />
+    <Folder Include="Infrastructure\Networking\" />
+    <Folder Include="Infrastructure\Persistence\Configuration\" />
+    <Folder Include="Infrastructure\Persistence\Repositories\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj" />
+  </ItemGroup>
+
 </Project>
