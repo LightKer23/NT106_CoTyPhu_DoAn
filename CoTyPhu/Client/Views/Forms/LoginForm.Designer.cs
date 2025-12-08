@@ -59,7 +59,7 @@
             // 
             lkLblRegister.AutoSize = true;
             lkLblRegister.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblRegister.Location = new Point(221, 340);
+            lkLblRegister.Location = new Point(211, 340);
             lkLblRegister.Name = "lkLblRegister";
             lkLblRegister.Size = new Size(99, 18);
             lkLblRegister.TabIndex = 15;
@@ -71,11 +71,11 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(60, 340);
+            label1.Location = new Point(75, 340);
             label1.Name = "label1";
-            label1.Size = new Size(161, 18);
+            label1.Size = new Size(133, 18);
             label1.TabIndex = 14;
-            label1.Text = "Bạn chưa có tài khoản?";
+            label1.Text = "Chưa có tài khoản?";
             // 
             // lkLblForgotPsswrd
             // 
@@ -91,12 +91,13 @@
             // 
             // label2
             // 
+            label2.AutoSize = true;
             label2.Font = new Font("Tahoma", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
             label2.Location = new Point(40, 30);
             label2.Name = "label2";
-            label2.Size = new Size(171, 43);
+            label2.Size = new Size(152, 34);
             label2.TabIndex = 8;
-            label2.Text = "ĐĂNG NHẬP";
+            label2.Text = "Đăng nhập";
             label2.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // lblTxtUsername
