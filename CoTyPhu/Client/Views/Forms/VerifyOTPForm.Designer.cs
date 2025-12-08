@@ -41,6 +41,7 @@
             // 
             // pnlVerifyOTP
             // 
+            pnlVerifyOTP.BorderStyle = BorderStyle.FixedSingle;
             pnlVerifyOTP.Controls.Add(label4);
             pnlVerifyOTP.Controls.Add(btnVerify);
             pnlVerifyOTP.Controls.Add(linkLabel1);

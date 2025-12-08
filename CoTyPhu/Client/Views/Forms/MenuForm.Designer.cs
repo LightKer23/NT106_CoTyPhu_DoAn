@@ -28,12 +28,33 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "MenuForm";
+            label1 = new Label();
+            SuspendLayout();
+            // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Location = new Point(428, 74);
+            label1.Name = "label1";
+            label1.Size = new Size(85, 20);
+            label1.TabIndex = 0;
+            label1.Text = "NOEL-POLY";
+            // 
+            // MenuForm
+            // 
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(782, 453);
+            Controls.Add(label1);
+            Name = "MenuForm";
+            ShowIcon = false;
+            Text = "Cờ tỷ phú";
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
+
+        private Label label1;
     }
 }
