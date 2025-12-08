@@ -112,7 +112,7 @@ namespace Server.Infrastructure.Database.Repository
         }
 
 
-        // Chỉ đổi người tới lượt
+        // Đổi lượt
         public bool UpdateTurn(int idMatch, int playerTurn)
         {
             try
