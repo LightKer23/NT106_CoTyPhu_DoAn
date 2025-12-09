@@ -1,21 +1,39 @@
-﻿namespace Common.Domain.Game
+﻿using Common.Domain.Game.Enums;
+
+public class PropertyTile : Tile
 {
-    public class PropertyTile : Tile
+    private Player owner;
+
+    private int landPrice;
+    private int housePrice;
+    private int hotelPrice;
+
+    private int houseCount;
+    private bool hasHotel;
+
+    private int[] rentPrice;
+
+    public PropertyTile(
+        string name,
+        int landPrice,
+        int housePrice,
+        int hotelPrice,
+        int[] rentPrice)
+        : base(name, TileType.Property)
     {
-        public int Price { get; set; }                
-        public int BaseRent { get; set; }             
-        public int HouseRent { get; set; }            
-        public int HotelRent { get; set; }           
-        public int HouseCount { get; set; }
-        public bool HasHotel { get; set; }
+        this.owner = null;
+        this.landPrice = landPrice;
+        this.housePrice = housePrice;
+        this.hotelPrice = hotelPrice;
 
-        public int? OwnerPlayerId { get; set; }       
+        this.houseCount = 0;
+        this.hasHotel = false;
 
-        public string ColorGroup { get; set; }
+        this.rentPrice = rentPrice;
+    }
 
-        public override void OnPlayerLanded(Player player, GameSession session)
-        {
-            throw new NotImplementedException();
-        }
+    public override void OnPlayerLand(Player player)
+    {
+        // Logic xử lý khi player đứng lên ô đất
     }
 }

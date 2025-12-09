@@ -1,29 +1,34 @@
-﻿using Common.Domain.Game.Enums;
+using Common.Domain.Game.Enums;
 
-namespace Common.Domain.Game
+public class Player
 {
-    public class Player
+    public string Name { get; set; }
+    public int Money { get; set; }
+    public int CurrentPosition { get; set; }
+
+    public PlayerStatus Status { get; set; } = PlayerStatus.Playing;
+
+    public List<PropertyTile> OwnedProperties { get; set; } = new();
+    public List<RailroadTile> OwnedRailroads { get; set; } = new();
+    public List<UtilityTile> OwnedUtilities { get; set; } = new();
+
+    public bool HasGetOutOfJailCard { get; set; }
+    public bool IsWinner { get; set; }
+
+    private Dice dice = new Dice();
+
+    public int RollDice()
     {
-        public int Id { get; set; }              
-        public string Name { get; set; }
-        public int Position { get; set; }        
-        public int Money { get; set; }
-        public PlayerStatus Status { get; set; } 
+        int total = dice.Roll();
 
-        public List<int> OwnedPropertyTileIds { get; set; } = new();
-        public int JailTurnCount { get; set; }
-
-        public void Move(int steps, int boardSize)
-        {
-            Position = (Position + steps) % boardSize;
-        }
-
-        public void ChangeMoney(int amount)
-        {
-            Money += amount;
-        }
-
-        public bool CanPay(int amount) => Money >= amount;
-        public bool IsBankrupt => Money < 0 || Status == PlayerStatus.Bankrupt;
+        return total;
     }
+
+    public void Move(int steps)
+    {
+
+    }
+
+    public void ReceiveMoney(int amount) => Money += amount;
+    public void PayMoney(int amount) => Money -= amount;
 }

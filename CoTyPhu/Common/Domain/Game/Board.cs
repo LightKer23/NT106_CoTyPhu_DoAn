@@ -1,19 +1,15 @@
-﻿namespace Common.Domain.Game
+public class Board
 {
-    public class Board
+    //Attribute
+    public List<Tile> Tiles { get; set; } = new();
+    public int StartIndex { get; set; }
+    public int JailPosition { get; set; }
+    public int FreeParkingIndex { get; set; }
+    public int GoToJailPosition { get; set; }
+
+    //Method
+    public Tile GetTile(int position)
     {
-        public IList<Tile> Tiles { get; set; } = new List<Tile>();
-
-        public int Size => Tiles.Count;
-
-        public Tile GetTile(int position)
-        {
-            if (position < 0 || position >= Tiles.Count)
-                throw new ArgumentOutOfRangeException(nameof(position));
-            return Tiles[position];
-        }
-
-        public IEnumerable<PropertyTile> GetProperties()
-            => Tiles.OfType<PropertyTile>();
+        return Tiles[position];
     }
 }

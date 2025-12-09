@@ -1,22 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-namespace Common.Domain.Game
+using Common.Domain.Game.Enums;
+
+public class Dice
 {
-    public class Dice
+    private readonly int[] faceValue = { 1, 2, 3, 4, 5, 6 };
+    private bool isDouble { get; set; };
+    private int dice1 { get; set; };
+    private int dice2 { get; set; };
+    private readonly Random random = new Random();
+
+    public int Roll()
     {
-        public int Dice1 { get; private set; }
-        public int Dice2 { get; private set; }
+        dice1 = faceValue[random.Next(0, 6)];
+        dice2 = faceValue[random.Next(0, 6)];
+        if(d1 == d2) isDouble = true;
+        else isDouble = false;
 
-        public int Total => Dice1 + Dice2;
-        public bool IsDouble => Dice1 == Dice2;
-
-        private readonly Random _random = new Random();
-
-        public void Roll()
-        {
-            Dice1 = _random.Next(1, 7);
-            Dice2 = _random.Next(1, 7);
-        }
+        return dice1 + dice2;
     }
 }
