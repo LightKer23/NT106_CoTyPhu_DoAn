@@ -46,7 +46,47 @@ namespace Server.Infrastructure.Database.Repository
             return null;
         }
 
-        
+        //Để đăng kí
+        public bool CheckUsername(string username)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM Account WHERE Username = @u",
+                    conn);
+
+                cmd.Parameters.AddWithValue("@u", username);
+
+                return (int)cmd.ExecuteScalar() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        public bool CheckEmail(string email)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var cmd = new SqlCommand(
+                    "SELECT COUNT(1) FROM Account WHERE Email=@e",
+                    conn);
+
+                cmd.Parameters.AddWithValue("@e", email);
+
+                return (int)cmd.ExecuteScalar() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         public int Insert(Account acc)
         {
             try
@@ -71,6 +111,58 @@ namespace Server.Infrastructure.Database.Repository
                 return -1;
             }
         }
+
+
+        //Để đăng nhập
+        public bool CheckLogin(string username, string passwordHash)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var cmd = new SqlCommand(@"
+            SELECT COUNT(1)
+            FROM Account
+            WHERE Username=@u AND PasswordHash=@p",
+                    conn);
+
+                cmd.Parameters.AddWithValue("@u", username);
+                cmd.Parameters.AddWithValue("@p", passwordHash);
+
+                return (int)cmd.ExecuteScalar() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
+        public bool ChangePasswordByEmail(string email, string newPasswordHash)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var updateCmd = new SqlCommand(@"
+            UPDATE Account
+            SET PasswordHash=@new
+            WHERE Email=@e", conn);
+
+                updateCmd.Parameters.AddWithValue("@new", newPasswordHash);
+                updateCmd.Parameters.AddWithValue("@e", email);
+
+                return updateCmd.ExecuteNonQuery() > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+
 
 
         public bool Update(Account acc)
