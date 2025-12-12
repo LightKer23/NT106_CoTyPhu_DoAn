@@ -6,5 +6,15 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void lkLblLogin_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+
+        }
+
+        private void lblTxtEmail_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

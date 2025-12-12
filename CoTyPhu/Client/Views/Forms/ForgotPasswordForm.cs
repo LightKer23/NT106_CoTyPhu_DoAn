@@ -16,5 +16,10 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void labelTextBoxControl1_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

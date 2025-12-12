@@ -36,26 +36,29 @@
             // 
             lblName.AutoSize = true;
             lblName.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lblName.Location = new Point(0, 10);
+            lblName.Location = new Point(0, 16);
+            lblName.Margin = new Padding(5, 0, 5, 0);
             lblName.Name = "lblName";
-            lblName.Size = new Size(0, 18);
+            lblName.Size = new Size(0, 29);
             lblName.TabIndex = 0;
             // 
             // textBox1
             // 
-            textBox1.Location = new Point(0, 31);
+            textBox1.Location = new Point(0, 50);
+            textBox1.Margin = new Padding(5, 5, 5, 5);
             textBox1.Name = "textBox1";
-            textBox1.Size = new Size(300, 27);
+            textBox1.Size = new Size(485, 39);
             textBox1.TabIndex = 1;
             // 
             // LabelTextBoxControl
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(textBox1);
             Controls.Add(lblName);
+            Margin = new Padding(5, 5, 5, 5);
             Name = "LabelTextBoxControl";
-            Size = new Size(300, 58);
+            Size = new Size(648, 313);
             ResumeLayout(false);
             PerformLayout();
         }
