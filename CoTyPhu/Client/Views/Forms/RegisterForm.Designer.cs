@@ -61,26 +61,29 @@
             // 
             // lblTxtPsswrdAgain
             // 
+            lblTxtPsswrdAgain.IsPassword = true;
             lblTxtPsswrdAgain.LabelText = "Nhập lại mật khẩu";
             lblTxtPsswrdAgain.Location = new Point(40, 350);
             lblTxtPsswrdAgain.Name = "lblTxtPsswrdAgain";
-            lblTxtPsswrdAgain.PasswordChar = '\0';
+            lblTxtPsswrdAgain.PasswordChar = '●';
             lblTxtPsswrdAgain.Size = new Size(300, 72);
             lblTxtPsswrdAgain.TabIndex = 19;
             lblTxtPsswrdAgain.TextBoxReadOnly = false;
             // 
             // lblTxtPsswrd
             // 
+            lblTxtPsswrd.IsPassword = true;
             lblTxtPsswrd.LabelText = "Mật khẩu";
             lblTxtPsswrd.Location = new Point(40, 285);
             lblTxtPsswrd.Name = "lblTxtPsswrd";
-            lblTxtPsswrd.PasswordChar = '\0';
+            lblTxtPsswrd.PasswordChar = '●';
             lblTxtPsswrd.Size = new Size(300, 72);
             lblTxtPsswrd.TabIndex = 18;
             lblTxtPsswrd.TextBoxReadOnly = false;
             // 
             // lblTxtEmail
             // 
+            lblTxtEmail.IsPassword = false;
             lblTxtEmail.LabelText = "Email";
             lblTxtEmail.Location = new Point(40, 220);
             lblTxtEmail.Name = "lblTxtEmail";
@@ -123,6 +126,7 @@
             // 
             // lblTxtFullname
             // 
+            lblTxtFullname.IsPassword = false;
             lblTxtFullname.LabelText = "Họ tên người dùng";
             lblTxtFullname.Location = new Point(40, 90);
             lblTxtFullname.Name = "lblTxtFullname";
@@ -143,6 +147,7 @@
             // 
             // lblTxtUsername
             // 
+            lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
             lblTxtUsername.Location = new Point(40, 155);
             lblTxtUsername.Name = "lblTxtUsername";

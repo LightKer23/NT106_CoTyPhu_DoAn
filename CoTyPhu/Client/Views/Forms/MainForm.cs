@@ -16,5 +16,7 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        
     }
 }

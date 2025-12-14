@@ -102,6 +102,7 @@
             // 
             // lblTxtUsername
             // 
+            lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
             lblTxtUsername.Location = new Point(40, 100);
             lblTxtUsername.Name = "lblTxtUsername";
@@ -122,10 +123,11 @@
             // 
             // lblTxtPassword
             // 
+            lblTxtPassword.IsPassword = true;
             lblTxtPassword.LabelText = "Mật khẩu";
             lblTxtPassword.Location = new Point(40, 165);
             lblTxtPassword.Name = "lblTxtPassword";
-            lblTxtPassword.PasswordChar = '\0';
+            lblTxtPassword.PasswordChar = '●';
             lblTxtPassword.Size = new Size(300, 72);
             lblTxtPassword.TabIndex = 10;
             lblTxtPassword.TextBoxReadOnly = false;
