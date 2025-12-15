@@ -10,13 +10,11 @@ using System.Windows.Forms;
 
 namespace Client.Views.Forms
 {
-    public partial class MainForm : Form
+    public partial class ChooseCharacterForm : Form
     {
-        public MainForm()
+        public ChooseCharacterForm()
         {
             InitializeComponent();
         }
-
-        
     }
 }

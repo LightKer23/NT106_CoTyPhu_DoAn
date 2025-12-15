@@ -50,5 +50,13 @@ namespace Client.Views.User_Controls
             add => textBox1.TextChanged += value;
             remove => textBox1.TextChanged -= value;
         }
+
+        [Category("Custom")]
+        [Description("Ẩn mật khẩu của textbox.")]
+        public bool IsPassword
+        {
+            get => textBox1.UseSystemPasswordChar;
+            set => textBox1.UseSystemPasswordChar = value;
+        }
     }
 }
