@@ -33,7 +33,7 @@
             panel1 = new Panel();
             label2 = new Label();
             label1 = new Label();
-            button1 = new Button();
+            btnHistory = new Button();
             panel1.SuspendLayout();
             SuspendLayout();
             // 
@@ -86,22 +86,22 @@
             label1.TabIndex = 0;
             label1.Text = "Tên đăng nhập:";
             // 
-            // button1
+            // btnHistory
             // 
-            button1.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button1.Location = new Point(34, 90);
-            button1.Name = "button1";
-            button1.Size = new Size(200, 50);
-            button1.TabIndex = 3;
-            button1.Text = "Lịch sử chơi";
-            button1.UseVisualStyleBackColor = true;
+            btnHistory.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnHistory.Location = new Point(34, 90);
+            btnHistory.Name = "btnHistory";
+            btnHistory.Size = new Size(200, 50);
+            btnHistory.TabIndex = 3;
+            btnHistory.Text = "Lịch sử chơi";
+            btnHistory.UseVisualStyleBackColor = true;
             // 
             // SettingForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(749, 450);
-            Controls.Add(button1);
+            Controls.Add(btnHistory);
             Controls.Add(panel1);
             Controls.Add(btnEditInfo);
             Controls.Add(btnLogOut);
@@ -120,6 +120,6 @@
         private Panel panel1;
         private Label label2;
         private Label label1;
-        private Button button1;
+        private Button btnHistory;
     }
 }
