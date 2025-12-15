@@ -7,8 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Constracts\" />
-    <Folder Include="Domain\Models\Enums\" />
+    <Folder Include="Contracts\Persistence\" />
+    <Folder Include="Contracts\Services\" />
+    <Folder Include="Domain\Chat\" />
+    <Folder Include="Domain\User\" />
+    <Folder Include="Domain\Room\" />
+    <Folder Include="Messaging\Enums\" />
+    <Folder Include="Messaging\Responses\" />
+    <Folder Include="Messaging\Requests\" />
   </ItemGroup>
 
 </Project>
