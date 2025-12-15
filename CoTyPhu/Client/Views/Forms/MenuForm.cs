@@ -16,5 +16,32 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void btnPlayWithPlayer_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnPlayWithCmp_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnGuide_Click(object sender, EventArgs e)
+        {
+            HowToPlayForm howToPlayForm = new HowToPlayForm();
+            howToPlayForm.ShowDialog();
+        }
+
+        private void btnSetting_Click(object sender, EventArgs e)
+        {
+            SettingForm settingForm = new SettingForm();
+            settingForm.ShowDialog();
+        }
+
+        private void btnExit_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
     }
 }

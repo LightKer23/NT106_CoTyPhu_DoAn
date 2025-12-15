@@ -45,38 +45,39 @@
             pnlVerifyOTP.Controls.Add(lblTxtNewPassword);
             pnlVerifyOTP.Controls.Add(label2);
             pnlVerifyOTP.Controls.Add(label1);
-            pnlVerifyOTP.Location = new Point(100, 145);
+            pnlVerifyOTP.Location = new Point(100, 138);
             pnlVerifyOTP.Name = "pnlVerifyOTP";
-            pnlVerifyOTP.Size = new Size(380, 360);
+            pnlVerifyOTP.Size = new Size(380, 342);
             pnlVerifyOTP.TabIndex = 1;
             // 
             // btnSetUpPsswrd
             // 
             btnSetUpPsswrd.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnSetUpPsswrd.Location = new Point(40, 300);
+            btnSetUpPsswrd.Location = new Point(40, 285);
             btnSetUpPsswrd.Name = "btnSetUpPsswrd";
-            btnSetUpPsswrd.Size = new Size(300, 40);
+            btnSetUpPsswrd.Size = new Size(300, 38);
             btnSetUpPsswrd.TabIndex = 12;
             btnSetUpPsswrd.Text = "Đặt lại mật khẩu";
             btnSetUpPsswrd.UseVisualStyleBackColor = true;
+            btnSetUpPsswrd.Click += btnSetUpPsswrd_Click;
             // 
             // lblTxtPasswordAgain
             // 
             lblTxtPasswordAgain.LabelText = "Nhập lại mật khẩu";
-            lblTxtPasswordAgain.Location = new Point(40, 225);
+            lblTxtPasswordAgain.Location = new Point(40, 214);
             lblTxtPasswordAgain.Name = "lblTxtPasswordAgain";
             lblTxtPasswordAgain.PasswordChar = '\0';
-            lblTxtPasswordAgain.Size = new Size(300, 72);
+            lblTxtPasswordAgain.Size = new Size(300, 68);
             lblTxtPasswordAgain.TabIndex = 11;
             lblTxtPasswordAgain.TextBoxReadOnly = false;
             // 
             // lblTxtNewPassword
             // 
             lblTxtNewPassword.LabelText = "Mật khẩu mới";
-            lblTxtNewPassword.Location = new Point(40, 160);
+            lblTxtNewPassword.Location = new Point(40, 152);
             lblTxtNewPassword.Name = "lblTxtNewPassword";
             lblTxtNewPassword.PasswordChar = '\0';
-            lblTxtNewPassword.Size = new Size(300, 72);
+            lblTxtNewPassword.Size = new Size(300, 68);
             lblTxtNewPassword.TabIndex = 10;
             lblTxtNewPassword.TextBoxReadOnly = false;
             // 
@@ -84,9 +85,9 @@
             // 
             label2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             label2.ForeColor = SystemColors.WindowFrame;
-            label2.Location = new Point(37, 70);
+            label2.Location = new Point(37, 66);
             label2.Name = "label2";
-            label2.Size = new Size(303, 60);
+            label2.Size = new Size(303, 57);
             label2.TabIndex = 1;
             label2.Text = "Mật khẩu có ít nhất 8 ký tự, bao gồm chữ cái, chữ số, chữ in hoa và các ký hiệu đặc biệt như #, $, !, @";
             // 
@@ -94,17 +95,17 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Tahoma", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(40, 30);
+            label1.Location = new Point(40, 28);
             label1.Name = "label1";
-            label1.Size = new Size(249, 34);
+            label1.Size = new Size(220, 30);
             label1.TabIndex = 0;
             label1.Text = "Thay đổi mật khẩu";
             // 
             // SetUpPasswordForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(582, 653);
+            ClientSize = new Size(582, 620);
             Controls.Add(pnlVerifyOTP);
             Name = "SetUpPasswordForm";
             ShowIcon = false;

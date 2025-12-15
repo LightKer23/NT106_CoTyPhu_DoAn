@@ -30,7 +30,7 @@
         {
             pnlForgotPsswrd = new Panel();
             btnCont = new Button();
-            labelTextBoxControl1 = new Client.Views.User_Controls.LabelTextBoxControl();
+            labelTextBoxUserEmail = new Client.Views.User_Controls.LabelTextBoxControl();
             label2 = new Label();
             pnlForgotPsswrd.SuspendLayout();
             SuspendLayout();
@@ -39,49 +39,50 @@
             // 
             pnlForgotPsswrd.BorderStyle = BorderStyle.FixedSingle;
             pnlForgotPsswrd.Controls.Add(btnCont);
-            pnlForgotPsswrd.Controls.Add(labelTextBoxControl1);
+            pnlForgotPsswrd.Controls.Add(labelTextBoxUserEmail);
             pnlForgotPsswrd.Controls.Add(label2);
-            pnlForgotPsswrd.Location = new Point(100, 200);
+            pnlForgotPsswrd.Location = new Point(100, 190);
             pnlForgotPsswrd.Name = "pnlForgotPsswrd";
-            pnlForgotPsswrd.Size = new Size(380, 250);
+            pnlForgotPsswrd.Size = new Size(380, 238);
             pnlForgotPsswrd.TabIndex = 0;
             // 
             // btnCont
             // 
             btnCont.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnCont.Location = new Point(40, 165);
+            btnCont.Location = new Point(40, 157);
             btnCont.Name = "btnCont";
-            btnCont.Size = new Size(300, 40);
+            btnCont.Size = new Size(300, 38);
             btnCont.TabIndex = 12;
             btnCont.Text = "Đặt lại mật khẩu";
             btnCont.UseVisualStyleBackColor = true;
+            btnCont.Click += btnCont_Click;
             // 
-            // labelTextBoxControl1
+            // labelTextBoxUserEmail
             // 
-            labelTextBoxControl1.LabelText = "Vui lòng nhập địa chỉ email";
-            labelTextBoxControl1.Location = new Point(40, 100);
-            labelTextBoxControl1.Name = "labelTextBoxControl1";
-            labelTextBoxControl1.PasswordChar = '\0';
-            labelTextBoxControl1.Size = new Size(297, 72);
-            labelTextBoxControl1.TabIndex = 10;
-            labelTextBoxControl1.TextBoxReadOnly = false;
+            labelTextBoxUserEmail.LabelText = "Vui lòng nhập địa chỉ email";
+            labelTextBoxUserEmail.Location = new Point(40, 95);
+            labelTextBoxUserEmail.Name = "labelTextBoxUserEmail";
+            labelTextBoxUserEmail.PasswordChar = '\0';
+            labelTextBoxUserEmail.Size = new Size(297, 68);
+            labelTextBoxUserEmail.TabIndex = 10;
+            labelTextBoxUserEmail.TextBoxReadOnly = false;
             // 
             // label2
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Tahoma", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label2.Location = new Point(40, 30);
+            label2.Location = new Point(40, 28);
             label2.Name = "label2";
-            label2.Size = new Size(209, 34);
+            label2.Size = new Size(183, 30);
             label2.TabIndex = 9;
             label2.Text = "Quên mật khẩu";
             label2.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // ForgotPasswordForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(582, 653);
+            ClientSize = new Size(582, 620);
             Controls.Add(pnlForgotPsswrd);
             Name = "ForgotPasswordForm";
             ShowIcon = false;
@@ -96,7 +97,7 @@
 
         private Panel pnlForgotPsswrd;
         private Label label2;
-        private User_Controls.LabelTextBoxControl labelTextBoxControl1;
+        private User_Controls.LabelTextBoxControl labelTextBoxUserEmail;
         private Button btnCont;
     }
 }

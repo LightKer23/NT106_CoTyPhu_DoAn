@@ -16,25 +16,49 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
-
-        private void lblTxtPassword_Load(object sender, EventArgs e)
-        {
-
-        }
-
-        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
-        {
-
-        }
-
-        private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
         private void lkLblRegister_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            (new RegisterForm()).Show();
+            this.Hide();
+
+            using (RegisterForm registerForm = new RegisterForm())
+            {
+                registerForm.ShowDialog();
+            }
+
+            this.Show();
         }
+
+        private void lkLblForgotPsswrd_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            this.Hide();
+
+            using (ForgotPasswordForm forgotForm = new ForgotPasswordForm())
+            {
+                forgotForm.ShowDialog();
+            }
+
+            this.Show();
+        }
+
+        private void btnLogin_Click(object sender, EventArgs e)
+        {
+            string username = lblTxtUsername.Text.Trim();
+            string password = lblTxtPassword.Text;
+
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ tài khoản và mật khẩu.");
+                return;
+            }
+
+            //SQL kiểm tra username và password
+            MessageBox.Show("Đăng nhập thành công!");
+
+            this.Hide();
+            MenuForm menu = new MenuForm();
+            menu.Show();
+        }
+
+
     }
 }

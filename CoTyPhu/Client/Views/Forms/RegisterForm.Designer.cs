@@ -54,16 +54,16 @@
             pnlRegister.Controls.Add(lblTxtFullname);
             pnlRegister.Controls.Add(btnRegister);
             pnlRegister.Controls.Add(lblTxtUsername);
-            pnlRegister.Location = new Point(100, 55);
+            pnlRegister.Location = new Point(100, 52);
             pnlRegister.Name = "pnlRegister";
-            pnlRegister.Size = new Size(380, 540);
+            pnlRegister.Size = new Size(380, 513);
             pnlRegister.TabIndex = 1;
             // 
             // lblTxtPsswrdAgain
             // 
             lblTxtPsswrdAgain.IsPassword = true;
             lblTxtPsswrdAgain.LabelText = "Nhập lại mật khẩu";
-            lblTxtPsswrdAgain.Location = new Point(40, 350);
+            lblTxtPsswrdAgain.Location = new Point(40, 332);
             lblTxtPsswrdAgain.Name = "lblTxtPsswrdAgain";
             lblTxtPsswrdAgain.PasswordChar = '●';
             lblTxtPsswrdAgain.Size = new Size(300, 72);
@@ -74,7 +74,7 @@
             // 
             lblTxtPsswrd.IsPassword = true;
             lblTxtPsswrd.LabelText = "Mật khẩu";
-            lblTxtPsswrd.Location = new Point(40, 285);
+            lblTxtPsswrd.Location = new Point(40, 271);
             lblTxtPsswrd.Name = "lblTxtPsswrd";
             lblTxtPsswrd.PasswordChar = '●';
             lblTxtPsswrd.Size = new Size(300, 72);
@@ -85,10 +85,10 @@
             // 
             lblTxtEmail.IsPassword = false;
             lblTxtEmail.LabelText = "Email";
-            lblTxtEmail.Location = new Point(40, 220);
+            lblTxtEmail.Location = new Point(40, 209);
             lblTxtEmail.Name = "lblTxtEmail";
             lblTxtEmail.PasswordChar = '\0';
-            lblTxtEmail.Size = new Size(300, 72);
+            lblTxtEmail.Size = new Size(300, 68);
             lblTxtEmail.TabIndex = 16;
             lblTxtEmail.TextBoxReadOnly = false;
             // 
@@ -96,20 +96,21 @@
             // 
             lkLblLogin.AutoSize = true;
             lkLblLogin.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblLogin.Location = new Point(209, 505);
+            lkLblLogin.Location = new Point(209, 480);
             lkLblLogin.Name = "lkLblLogin";
-            lkLblLogin.Size = new Size(79, 18);
+            lkLblLogin.Size = new Size(76, 17);
             lkLblLogin.TabIndex = 15;
             lkLblLogin.TabStop = true;
             lkLblLogin.Text = "Đăng nhập";
+            lkLblLogin.LinkClicked += lkLblLogin_LinkClicked;
             // 
             // label1
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(92, 505);
+            label1.Location = new Point(92, 480);
             label1.Name = "label1";
-            label1.Size = new Size(117, 18);
+            label1.Size = new Size(111, 17);
             label1.TabIndex = 14;
             label1.Text = "Đã có tài khoản?";
             // 
@@ -117,9 +118,9 @@
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Tahoma", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label2.Location = new Point(40, 20);
+            label2.Location = new Point(40, 19);
             label2.Name = "label2";
-            label2.Size = new Size(118, 34);
+            label2.Size = new Size(103, 30);
             label2.TabIndex = 8;
             label2.Text = "Đăng ký";
             label2.TextAlign = ContentAlignment.MiddleLeft;
@@ -128,39 +129,40 @@
             // 
             lblTxtFullname.IsPassword = false;
             lblTxtFullname.LabelText = "Họ tên người dùng";
-            lblTxtFullname.Location = new Point(40, 90);
+            lblTxtFullname.Location = new Point(40, 86);
             lblTxtFullname.Name = "lblTxtFullname";
             lblTxtFullname.PasswordChar = '\0';
-            lblTxtFullname.Size = new Size(300, 72);
+            lblTxtFullname.Size = new Size(300, 68);
             lblTxtFullname.TabIndex = 9;
             lblTxtFullname.TextBoxReadOnly = false;
             // 
             // btnRegister
             // 
             btnRegister.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnRegister.Location = new Point(40, 445);
+            btnRegister.Location = new Point(40, 423);
             btnRegister.Name = "btnRegister";
-            btnRegister.Size = new Size(300, 40);
+            btnRegister.Size = new Size(300, 38);
             btnRegister.TabIndex = 11;
             btnRegister.Text = "Đăng ký";
             btnRegister.UseVisualStyleBackColor = true;
+            btnRegister.Click += btnRegister_Click;
             // 
             // lblTxtUsername
             // 
             lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
-            lblTxtUsername.Location = new Point(40, 155);
+            lblTxtUsername.Location = new Point(40, 147);
             lblTxtUsername.Name = "lblTxtUsername";
             lblTxtUsername.PasswordChar = '\0';
-            lblTxtUsername.Size = new Size(300, 72);
+            lblTxtUsername.Size = new Size(300, 68);
             lblTxtUsername.TabIndex = 10;
             lblTxtUsername.TextBoxReadOnly = false;
             // 
             // RegisterForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(582, 653);
+            ClientSize = new Size(582, 620);
             Controls.Add(pnlRegister);
             Name = "RegisterForm";
             ShowIcon = false;
