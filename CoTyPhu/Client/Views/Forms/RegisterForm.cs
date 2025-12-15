@@ -6,5 +6,15 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void btnRegister_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lkLblLogin_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }

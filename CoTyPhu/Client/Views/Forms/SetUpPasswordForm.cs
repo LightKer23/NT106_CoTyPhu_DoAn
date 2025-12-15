@@ -16,5 +16,12 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void btnSetUpPsswrd_Click(object sender, EventArgs e)
+        {
+            //SQL cập nhật lại password
+            MessageBox.Show("Đổi mật khẩu thành công!");
+            this.Close();
+        }
     }
 }

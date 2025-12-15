@@ -50,18 +50,18 @@
             pnlLogin.Controls.Add(lblTxtUsername);
             pnlLogin.Controls.Add(btnLogin);
             pnlLogin.Controls.Add(lblTxtPassword);
-            pnlLogin.Location = new Point(100, 135);
+            pnlLogin.Location = new Point(100, 128);
             pnlLogin.Name = "pnlLogin";
-            pnlLogin.Size = new Size(380, 380);
+            pnlLogin.Size = new Size(380, 361);
             pnlLogin.TabIndex = 0;
             // 
             // lkLblRegister
             // 
             lkLblRegister.AutoSize = true;
             lkLblRegister.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblRegister.Location = new Point(211, 340);
+            lkLblRegister.Location = new Point(211, 323);
             lkLblRegister.Name = "lkLblRegister";
-            lkLblRegister.Size = new Size(99, 18);
+            lkLblRegister.Size = new Size(95, 17);
             lkLblRegister.TabIndex = 15;
             lkLblRegister.TabStop = true;
             lkLblRegister.Text = "Đăng ký ngay";
@@ -71,9 +71,9 @@
             // 
             label1.AutoSize = true;
             label1.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label1.Location = new Point(75, 340);
+            label1.Location = new Point(75, 323);
             label1.Name = "label1";
-            label1.Size = new Size(133, 18);
+            label1.Size = new Size(127, 17);
             label1.TabIndex = 14;
             label1.Text = "Chưa có tài khoản?";
             // 
@@ -81,21 +81,22 @@
             // 
             lkLblForgotPsswrd.AutoSize = true;
             lkLblForgotPsswrd.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblForgotPsswrd.Location = new Point(219, 226);
+            lkLblForgotPsswrd.Location = new Point(219, 215);
             lkLblForgotPsswrd.Name = "lkLblForgotPsswrd";
-            lkLblForgotPsswrd.Size = new Size(117, 18);
+            lkLblForgotPsswrd.Size = new Size(110, 17);
             lkLblForgotPsswrd.TabIndex = 13;
             lkLblForgotPsswrd.TabStop = true;
             lkLblForgotPsswrd.Text = "Quên mật khẩu?";
             lkLblForgotPsswrd.TextAlign = ContentAlignment.TopRight;
+            lkLblForgotPsswrd.LinkClicked += lkLblForgotPsswrd_LinkClicked;
             // 
             // label2
             // 
             label2.AutoSize = true;
             label2.Font = new Font("Tahoma", 16.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label2.Location = new Point(40, 30);
+            label2.Location = new Point(40, 28);
             label2.Name = "label2";
-            label2.Size = new Size(152, 34);
+            label2.Size = new Size(134, 30);
             label2.TabIndex = 8;
             label2.Text = "Đăng nhập";
             label2.TextAlign = ContentAlignment.MiddleLeft;
@@ -103,38 +104,39 @@
             // lblTxtUsername
             // 
             lblTxtUsername.LabelText = "Tên người dùng";
-            lblTxtUsername.Location = new Point(40, 100);
+            lblTxtUsername.Location = new Point(40, 95);
             lblTxtUsername.Name = "lblTxtUsername";
             lblTxtUsername.PasswordChar = '\0';
-            lblTxtUsername.Size = new Size(300, 72);
+            lblTxtUsername.Size = new Size(300, 68);
             lblTxtUsername.TabIndex = 9;
             lblTxtUsername.TextBoxReadOnly = false;
             // 
             // btnLogin
             // 
             btnLogin.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnLogin.Location = new Point(40, 280);
+            btnLogin.Location = new Point(40, 266);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(300, 40);
+            btnLogin.Size = new Size(300, 38);
             btnLogin.TabIndex = 11;
             btnLogin.Text = "Đăng nhập";
             btnLogin.UseVisualStyleBackColor = true;
+            btnLogin.Click += btnLogin_Click;
             // 
             // lblTxtPassword
             // 
             lblTxtPassword.LabelText = "Mật khẩu";
-            lblTxtPassword.Location = new Point(40, 165);
+            lblTxtPassword.Location = new Point(40, 157);
             lblTxtPassword.Name = "lblTxtPassword";
-            lblTxtPassword.PasswordChar = '\0';
-            lblTxtPassword.Size = new Size(300, 72);
+            lblTxtPassword.PasswordChar = '*';
+            lblTxtPassword.Size = new Size(300, 68);
             lblTxtPassword.TabIndex = 10;
             lblTxtPassword.TextBoxReadOnly = false;
             // 
             // LoginForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(8F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(582, 653);
+            ClientSize = new Size(582, 620);
             Controls.Add(pnlLogin);
             Name = "LoginForm";
             ShowIcon = false;
