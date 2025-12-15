@@ -59,7 +59,7 @@
             // 
             // pbBoard
             // 
-            pbBoard.Image = Properties.Resources.banthu2;
+            pbBoard.Image = Properties.Resources.ban_co_ty_phu;
             pbBoard.Location = new Point(270, 0);
             pbBoard.Name = "pbBoard";
             pbBoard.Size = new Size(800, 750);
