@@ -34,7 +34,7 @@
             lkLblResendOTP = new LinkLabel();
             label3 = new Label();
             txtOTP = new TextBox();
-            label2 = new Label();
+            lblToEmail = new Label();
             label1 = new Label();
             pnlVerifyOTP.SuspendLayout();
             SuspendLayout();
@@ -47,7 +47,7 @@
             pnlVerifyOTP.Controls.Add(lkLblResendOTP);
             pnlVerifyOTP.Controls.Add(label3);
             pnlVerifyOTP.Controls.Add(txtOTP);
-            pnlVerifyOTP.Controls.Add(label2);
+            pnlVerifyOTP.Controls.Add(lblToEmail);
             pnlVerifyOTP.Controls.Add(label1);
             pnlVerifyOTP.Location = new Point(100, 166);
             pnlVerifyOTP.Name = "pnlVerifyOTP";
@@ -103,16 +103,16 @@
             txtOTP.Size = new Size(300, 26);
             txtOTP.TabIndex = 2;
             // 
-            // label2
+            // lblToEmail
             // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label2.ForeColor = SystemColors.WindowFrame;
-            label2.Location = new Point(40, 66);
-            label2.Name = "label2";
-            label2.Size = new Size(231, 19);
-            label2.TabIndex = 1;
-            label2.Text = "Mã xác thực được gửi sang email xxx";
+            lblToEmail.AutoSize = true;
+            lblToEmail.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblToEmail.ForeColor = SystemColors.WindowFrame;
+            lblToEmail.Location = new Point(40, 66);
+            lblToEmail.Name = "lblToEmail";
+            lblToEmail.Size = new Size(231, 19);
+            lblToEmail.TabIndex = 1;
+            lblToEmail.Text = "Mã xác thực được gửi sang email xxx";
             // 
             // label1
             // 
@@ -146,7 +146,7 @@
         private LinkLabel lkLblResendOTP;
         private Label label3;
         private TextBox txtOTP;
-        private Label label2;
+        private Label lblToEmail;
         private Label label4;
     }
 }

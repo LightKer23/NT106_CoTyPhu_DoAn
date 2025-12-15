@@ -18,11 +18,27 @@ namespace Client.Views.Forms
 
         private string generatedOTP;
         private string userEmail;
+        private string MaskEmail(string email)
+        {
+            char[] chars = email.ToCharArray();
+
+            for (int i = 3; i < chars.Length; i++)
+            {
+                if (chars[i] == '@')
+                    break;
+
+                chars[i] = '*';
+            }
+
+            return new string(chars);
+        }
+
         public VerifyOTPForm(string userEmail, string OTP)
         {
             InitializeComponent();
             generatedOTP = OTP;
             this.userEmail = userEmail;
+            lblToEmail.Text = $"Mã xác thực đã được gửi đến email \n{MaskEmail(userEmail)}";
         }
 
 
@@ -54,7 +70,7 @@ namespace Client.Views.Forms
         {
             SmtpClient client = new SmtpClient("smtp.gmail.com", 587);
             client.EnableSsl = true;
-            client.Credentials = new System.Net.NetworkCredential("", "");
+            client.Credentials = new System.Net.NetworkCredential("quynhduyennd20@gmail.com", "jkcs ojpr owan ddef");
 
             MailMessage message = new MailMessage();
             message.From = new MailAddress("");

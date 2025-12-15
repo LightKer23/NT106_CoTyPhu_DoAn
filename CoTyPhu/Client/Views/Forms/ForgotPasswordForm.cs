@@ -27,6 +27,7 @@ namespace Client.Views.Forms
             if (string.IsNullOrEmpty(userEmail))
             {
                 MessageBox.Show("Vui lòng nhập Email!");
+                return;
             }
             GenerateOTP();
 
@@ -57,10 +58,10 @@ namespace Client.Views.Forms
         {
             SmtpClient client = new SmtpClient("smtp.gmail.com", 587);
             client.EnableSsl = true;
-            client.Credentials = new System.Net.NetworkCredential("", "");
+            client.Credentials = new System.Net.NetworkCredential("quynhduyennd20@gmail.com", "jkcs ojpr owan ddef");
 
             MailMessage message = new MailMessage();
-            message.From = new MailAddress("");
+            message.From = new MailAddress("quynhduyennd20@gmail.com");
             message.To.Add(userEmail);
             message.Subject = "XÁC MINH TÀI KHOẢN CỜ TỶ PHÚ";
             message.Body = $"Mã OTP xác minh tài khoản của bạn: {OTP}";
