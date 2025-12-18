@@ -31,8 +31,6 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SetUpPasswordForm));
             pnlVerifyOTP = new Panel();
             btnSetUpPsswrd = new Button();
-            lblTxtPasswordAgain = new Client.Views.User_Controls.LabelTextBoxControl();
-            lblTxtNewPassword = new Client.Views.User_Controls.LabelTextBoxControl();
             label2 = new Label();
             label1 = new Label();
             pnlVerifyOTP.SuspendLayout();
@@ -43,15 +41,14 @@
             pnlVerifyOTP.BackColor = Color.Transparent;
             pnlVerifyOTP.BorderStyle = BorderStyle.FixedSingle;
             pnlVerifyOTP.Controls.Add(btnSetUpPsswrd);
-            pnlVerifyOTP.Controls.Add(lblTxtPasswordAgain);
-            pnlVerifyOTP.Controls.Add(lblTxtNewPassword);
             pnlVerifyOTP.Controls.Add(label2);
             pnlVerifyOTP.Controls.Add(label1);
             pnlVerifyOTP.Location = new Point(163, 139);
-            pnlVerifyOTP.Margin = new Padding(5, 5, 5, 5);
+            pnlVerifyOTP.Margin = new Padding(5);
             pnlVerifyOTP.Name = "pnlVerifyOTP";
             pnlVerifyOTP.Size = new Size(616, 575);
             pnlVerifyOTP.TabIndex = 1;
+            pnlVerifyOTP.Paint += pnlVerifyOTP_Paint;
             // 
             // btnSetUpPsswrd
             // 
@@ -59,34 +56,12 @@
             btnSetUpPsswrd.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnSetUpPsswrd.ForeColor = Color.White;
             btnSetUpPsswrd.Location = new Point(60, 455);
-            btnSetUpPsswrd.Margin = new Padding(5, 5, 5, 5);
+            btnSetUpPsswrd.Margin = new Padding(5);
             btnSetUpPsswrd.Name = "btnSetUpPsswrd";
             btnSetUpPsswrd.Size = new Size(485, 46);
             btnSetUpPsswrd.TabIndex = 12;
             btnSetUpPsswrd.Text = "Đặt lại mật khẩu";
             btnSetUpPsswrd.UseVisualStyleBackColor = true;
-            // 
-            // lblTxtPasswordAgain
-            // 
-            lblTxtPasswordAgain.LabelText = "Nhập lại mật khẩu";
-            lblTxtPasswordAgain.Location = new Point(60, 327);
-            lblTxtPasswordAgain.Margin = new Padding(8, 8, 8, 8);
-            lblTxtPasswordAgain.Name = "lblTxtPasswordAgain";
-            lblTxtPasswordAgain.PasswordChar = '\0';
-            lblTxtPasswordAgain.Size = new Size(488, 115);
-            lblTxtPasswordAgain.TabIndex = 11;
-            lblTxtPasswordAgain.TextBoxReadOnly = false;
-            // 
-            // lblTxtNewPassword
-            // 
-            lblTxtNewPassword.LabelText = "Mật khẩu mới";
-            lblTxtNewPassword.Location = new Point(60, 216);
-            lblTxtNewPassword.Margin = new Padding(8, 8, 8, 8);
-            lblTxtNewPassword.Name = "lblTxtNewPassword";
-            lblTxtNewPassword.PasswordChar = '\0';
-            lblTxtNewPassword.Size = new Size(488, 115);
-            lblTxtNewPassword.TabIndex = 10;
-            lblTxtNewPassword.TextBoxReadOnly = false;
             // 
             // label2
             // 
@@ -98,6 +73,7 @@
             label2.Size = new Size(492, 96);
             label2.TabIndex = 1;
             label2.Text = "Mật khẩu có ít nhất 8 ký tự, bao gồm chữ cái, chữ số, chữ in hoa và các ký hiệu đặc biệt như #, $, !, @";
+            label2.Click += label2_Click;
             // 
             // label1
             // 
@@ -118,7 +94,7 @@
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
             ClientSize = new Size(946, 852);
             Controls.Add(pnlVerifyOTP);
-            Margin = new Padding(5, 5, 5, 5);
+            Margin = new Padding(5);
             Name = "SetUpPasswordForm";
             ShowIcon = false;
             Text = "Thiết lập mật khẩu";

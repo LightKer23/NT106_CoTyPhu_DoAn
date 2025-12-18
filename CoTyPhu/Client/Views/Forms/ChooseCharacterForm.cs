@@ -10,21 +10,11 @@ using System.Windows.Forms;
 
 namespace Client.Views.Forms
 {
-    public partial class MainForm : Form
+    public partial class ChooseCharacterForm : Form
     {
-        public MainForm()
+        public ChooseCharacterForm()
         {
             InitializeComponent();
-        }
-
-        private void pbTile_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void pbBoard_Click(object sender, EventArgs e)
-        {
-
         }
     }
 }

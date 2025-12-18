@@ -16,5 +16,15 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void pnlVerifyOTP_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+                                                                                                                                                
+        }
     }
 }
