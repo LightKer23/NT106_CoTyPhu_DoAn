@@ -20,6 +20,9 @@ namespace Common.Constracts
         ForgotPasswordRequest,     // client yêu cầu quên mật khẩu
         ForgotPasswordResponse,    // server phản hồi gửi mail / mã
 
+        VerifyOTPRequest,
+        VerifyOTPResponse,
+
         ResetPasswordRequest,      // client gửi mật khẩu mới
         ResetPasswordResponse,     // server xác nhận đổi mật khẩu
 
