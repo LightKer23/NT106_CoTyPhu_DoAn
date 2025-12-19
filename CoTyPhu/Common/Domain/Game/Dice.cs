@@ -12,7 +12,7 @@ public class Dice
     {
         dice1 = faceValue[random.Next(0, 6)];
         dice2 = faceValue[random.Next(0, 6)];
-        if(d1 == d2) isDouble = true;
+        if(dice1 == dice2) isDouble = true;
         else isDouble = false;
 
         return dice1 + dice2;
