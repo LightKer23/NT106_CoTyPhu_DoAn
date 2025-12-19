@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Constracts\" />
     <Folder Include="Domain\Models\Enums\" />
   </ItemGroup>
 

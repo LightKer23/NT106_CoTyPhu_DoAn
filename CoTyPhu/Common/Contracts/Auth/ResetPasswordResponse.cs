@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Auth
 {
-    internal class ResetPasswordResponse
+    public class ResetPasswordResponse
     {
+        public bool Success { get; set; }
+        public string Message { get; set; }
     }
 }

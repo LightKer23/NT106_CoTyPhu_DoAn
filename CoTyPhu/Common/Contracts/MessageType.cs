@@ -8,27 +8,68 @@ namespace Common.Constracts
 {
     public enum MessageType
     {
-        LoginRequest,
-        LoginResponse,
-        RegisterRequest,
-        RegisterResponse,
+        // ===== AUTH =====
+        LoginRequest,              // client gửi đăng nhập
+        LoginResponse,             // server trả kết quả đăng nhập
 
-        // -------- ROOM ----------
-        CreateRoomRequest,
-        CreateRoomResponse,
-        JoinRoomRequest,
-        JoinRoomResponse,
-        StartMatchEvent,
+        RegisterRequest,           // client gửi đăng ký
+        RegisterResponse,          // server trả kết quả đăng ký
 
-        // -------- GAME ACTION (client → server) ----------
-        // Client random xong gửi lên để server xử lý logic
-        RollDiceRequest,          // {MatchID, PlayerID, Roll1, Roll2}
-        BuyDecisionRequest,       // {MatchID, PlayerID, PropertyID, Accept}
-        EndTurnRequest,           // {MatchID, PlayerID}
+        LogoutRequest,             // client yêu cầu đăng xuất
 
-        // -------- GAME EVENT (server → client) ----------
-        // Kết quả xử lý 1 lượt
-        TurnResultEvent,          // gói tổng hợp mọi update sau khi xử lý
-        AskBuyPropertyEvent,
+        ForgotPasswordRequest,     // client yêu cầu quên mật khẩu
+        ForgotPasswordResponse,    // server phản hồi gửi mail / mã
+
+        ResetPasswordRequest,      // client gửi mật khẩu mới
+        ResetPasswordResponse,     // server xác nhận đổi mật khẩu
+
+        // ===== ROOM / MATCH =====
+        CreateRoomRequest,         // tạo phòng chơi
+        CreateRoomResponse,        // server trả info phòng
+
+        JoinRoomRequest,           // vào phòng
+        JoinRoomResponse,          // server xác nhận vào phòng
+
+        LeaveRoomRequest,          // rời phòng trước khi chơi
+        LeaveRoomEvent,            // server broadcast người rời phòng
+
+        StartMatchEvent,           // server bắt đầu trận
+        EndMatchEvent,             // server kết thúc trận
+
+        RoomStateEvent,            // cập nhật danh sách player trong phòng
+
+        // ===== GAME ACTION (Client → Server) =====
+        RollDiceRequest,           // yêu cầu tung xúc xắc
+
+        BuyDecisionRequest,        // quyết định mua / không mua đất
+
+        GetOutOfJailRequest,       // chọn cách ra tù
+
+        SellPropertyRequest,       // bán đất để lấy tiền
+
+        UpgradePropertyRequest,    // xây nhà / khách sạn
+        DowngradePropertyRequest,  // bán nhà
+
+        EndTurnRequest,            // kết thúc lượt
+
+        LeaveMatchRequest,         // thoát giữa trận
+
+        // ===== GAME EVENT (Server → Client) =====
+        DiceRolledEvent,         // kết quả tung xúc xắc
+        TurnResultEvent,           // kết quả xử lý 1 lượt
+        AskBuyPropertyEvent,       // server hỏi mua đất
+        PlayerMovedEvent,          // player di chuyển
+        MoneyChangedEvent,         // thay đổi tiền
+        PlayerJailedEvent,         // player bị vào tù
+        PlayerReleasedFromJailEvent,// player ra tù
+        PlayerBankruptEvent,       // player phá sản
+        PlayerLeftEvent,           // player rời trận
+        DrawChanceCardEvent,       // rút thẻ cơ hội
+        DrawCommunityChestEvent,   // rút thẻ khí vận
+        TaxPaidEvent,              // đóng thuế
+
+        // ===== SYSTEM / ERROR =====
+        ErrorResponse,             // lỗi từ server
+        ServerNotificationEvent    // thông báo hệ thống
     }
 }

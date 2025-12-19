@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class UpgradePropertyRequest
+    public class UpgradePropertyRequest
     {
+        public int PropertyId { get; set; }
     }
 }

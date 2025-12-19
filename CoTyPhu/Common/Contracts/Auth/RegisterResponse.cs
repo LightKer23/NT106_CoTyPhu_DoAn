@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Constracts.Auth
+namespace Common.Contracts.Auth
 {
     public class RegisterResponse
     {

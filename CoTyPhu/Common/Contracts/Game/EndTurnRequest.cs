@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class EndTurnRequest
-    {
-    }
+    public class EndTurnRequest { }
+
 }

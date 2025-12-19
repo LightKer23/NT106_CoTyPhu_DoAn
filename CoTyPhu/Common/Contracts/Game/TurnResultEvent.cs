@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Constracts.Game
+namespace Common.Contracts.Game
 {
     public class TurnResultEvent
     {

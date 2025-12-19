@@ -6,7 +6,5 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class LeaveMatchRequest
-    {
-    }
+    public class LeaveMatchRequest { }
 }

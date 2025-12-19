@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Auth
 {
-    internal class ForgotPasswordResponse
+    public class ForgotPasswordResponse
     {
+        public bool Success { get; set; }
+        public string Message { get; set; }
     }
 }

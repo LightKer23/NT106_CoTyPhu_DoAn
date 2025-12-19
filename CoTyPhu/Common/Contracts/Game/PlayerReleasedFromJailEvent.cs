@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class PlayerReleasedFromJailEvent
+    public class PlayerReleasedFromJailEvent
     {
+        public int PlayerId { get; set; }
     }
 }

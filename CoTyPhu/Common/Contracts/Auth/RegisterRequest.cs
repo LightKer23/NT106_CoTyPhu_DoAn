@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Constracts.Auth
+namespace Common.Contracts.Auth
 {
     public class RegisterRequest
     {
         public string Username { get; set; }
-        public string Password { get; set; }     // có thể hash ở client hoặc để plain rồi hash ở server
+        public string Password { get; set; }     // hash trước khi gửi
         public string Email { get; set; }
         public string DisplayName { get; set; }
     }

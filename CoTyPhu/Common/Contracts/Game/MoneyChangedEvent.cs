@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class MoneyChangedEvent
+    public class MoneyChangedEvent
     {
+        public int PlayerId { get; set; }
+        public int Amount { get; set; }
     }
 }

@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class SellPropertyRequest
+    public class SellPropertyRequest
     {
+        public int PropertyId { get; set; }
     }
 }

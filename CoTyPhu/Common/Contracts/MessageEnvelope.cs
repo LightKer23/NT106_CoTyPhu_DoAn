@@ -8,16 +8,34 @@ namespace Common.Constracts
 {
     public class MessageEnvelope
     {
-        public MessageType Type { get; set; }
-        public string Payload { get; set; }   // JSON của body
+        public Guid MessageId { get; set; } // Dùng để ghép Request, Response
 
-        public MessageEnvelope() { }
+        public MessageType Type { get; set; } // Phân biệt loại message
 
-        public MessageEnvelope(MessageType type, string payload)
+        // Ngữ cảnh game (null nếu chưa vào match)
+        public int? MatchId { get; set; }
+        public int? PlayerId { get; set; }
+
+        public string Payload { get; set; }   // Nội dung chính (JSON)
+
+
+        // Constructor tiện dùng
+        public MessageEnvelope()
         {
-            Type = type;
-            Payload = payload;
+            MessageId = Guid.NewGuid();
         }
 
+        public MessageEnvelope(
+            MessageType type,
+            string payload,
+            int? matchId = null,
+            int? playerId = null)
+        {
+            MessageId = Guid.NewGuid();
+            Type = type;
+            Payload = payload;
+            MatchId = matchId;
+            PlayerId = playerId;
+        }
     }
 }

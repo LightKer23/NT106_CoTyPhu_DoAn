@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Auth
 {
-    internal class ForgotPasswordRequest
+    public class ForgotPasswordRequest
     {
+        public string Email { get; set; }
     }
 }

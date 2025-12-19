@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    internal class PlayerMovedEvent
+    public class PlayerMovedEvent
     {
+        public int PlayerId { get; set; }
+        public int NewPosition { get; set; }
     }
 }
