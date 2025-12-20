@@ -355,7 +355,6 @@
             pbTile20.Size = new Size(120, 120);
             pbTile20.TabIndex = 66;
             pbTile20.TabStop = false;
-            pbTile20.Click += pbTile20_Click;
             // 
             // pbTile19
             // 

@@ -53,20 +53,18 @@
             pnlLogin.Controls.Add(lblTxtUsername);
             pnlLogin.Controls.Add(btnLogin);
             pnlLogin.Controls.Add(lblTxtPassword);
-            pnlLogin.Location = new Point(170, 144);
-            pnlLogin.Margin = new Padding(5);
+            pnlLogin.Location = new Point(105, 90);
             pnlLogin.Name = "pnlLogin";
-            pnlLogin.Size = new Size(631, 482);
+            pnlLogin.Size = new Size(389, 302);
             pnlLogin.TabIndex = 0;
             // 
             // lkLblRegister
             // 
             lkLblRegister.AutoSize = true;
             lkLblRegister.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblRegister.Location = new Point(343, 389);
-            lkLblRegister.Margin = new Padding(5, 0, 5, 0);
+            lkLblRegister.Location = new Point(211, 243);
             lkLblRegister.Name = "lkLblRegister";
-            lkLblRegister.Size = new Size(161, 32);
+            lkLblRegister.Size = new Size(99, 20);
             lkLblRegister.TabIndex = 15;
             lkLblRegister.TabStop = true;
             lkLblRegister.Text = "Đăng ký ngay";
@@ -77,10 +75,9 @@
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             label1.ForeColor = Color.Black;
-            label1.Location = new Point(125, 389);
-            label1.Margin = new Padding(5, 0, 5, 0);
+            label1.Location = new Point(77, 243);
             label1.Name = "label1";
-            label1.Size = new Size(218, 32);
+            label1.Size = new Size(135, 20);
             label1.TabIndex = 14;
             label1.Text = "Chưa có tài khoản?";
             // 
@@ -88,10 +85,9 @@
             // 
             lkLblForgotPsswrd.AutoSize = true;
             lkLblForgotPsswrd.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            lkLblForgotPsswrd.Location = new Point(368, 282);
-            lkLblForgotPsswrd.Margin = new Padding(5, 0, 5, 0);
+            lkLblForgotPsswrd.Location = new Point(226, 176);
             lkLblForgotPsswrd.Name = "lkLblForgotPsswrd";
-            lkLblForgotPsswrd.Size = new Size(191, 32);
+            lkLblForgotPsswrd.Size = new Size(116, 20);
             lkLblForgotPsswrd.TabIndex = 13;
             lkLblForgotPsswrd.TabStop = true;
             lkLblForgotPsswrd.Text = "Quên mật khẩu?";
@@ -102,10 +98,9 @@
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 13.875F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label2.ForeColor = Color.FromArgb(192, 0, 0);
-            label2.Location = new Point(190, 19);
-            label2.Margin = new Padding(5, 0, 5, 0);
+            label2.Location = new Point(117, 12);
             label2.Name = "label2";
-            label2.Size = new Size(246, 50);
+            label2.Size = new Size(161, 32);
             label2.TabIndex = 8;
             label2.Text = "ĐĂNG NHẬP";
             label2.TextAlign = ContentAlignment.MiddleLeft;
@@ -113,12 +108,13 @@
             // 
             // lblTxtUsername
             // 
+            lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
-            lblTxtUsername.Location = new Point(68, 77);
-            lblTxtUsername.Margin = new Padding(8);
+            lblTxtUsername.Location = new Point(42, 48);
+            lblTxtUsername.Margin = new Padding(5, 5, 5, 5);
             lblTxtUsername.Name = "lblTxtUsername";
             lblTxtUsername.PasswordChar = '\0';
-            lblTxtUsername.Size = new Size(488, 115);
+            lblTxtUsername.Size = new Size(300, 72);
             lblTxtUsername.TabIndex = 9;
             lblTxtUsername.TextBoxReadOnly = false;
             // 
@@ -127,10 +123,9 @@
             btnLogin.BackgroundImage = (Image)resources.GetObject("btnLogin.BackgroundImage");
             btnLogin.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnLogin.ForeColor = SystemColors.ButtonHighlight;
-            btnLogin.Location = new Point(65, 329);
-            btnLogin.Margin = new Padding(5);
+            btnLogin.Location = new Point(40, 206);
             btnLogin.Name = "btnLogin";
-            btnLogin.Size = new Size(485, 46);
+            btnLogin.Size = new Size(298, 29);
             btnLogin.TabIndex = 11;
             btnLogin.Text = "Đăng nhập";
             btnLogin.UseVisualStyleBackColor = true;
@@ -138,12 +133,13 @@
             // 
             // lblTxtPassword
             // 
+            lblTxtPassword.IsPassword = true;
             lblTxtPassword.LabelText = "Mật khẩu";
-            lblTxtPassword.Location = new Point(68, 173);
-            lblTxtPassword.Margin = new Padding(8);
+            lblTxtPassword.Location = new Point(42, 108);
+            lblTxtPassword.Margin = new Padding(5, 5, 5, 5);
             lblTxtPassword.Name = "lblTxtPassword";
-            lblTxtPassword.PasswordChar = '\0';
-            lblTxtPassword.Size = new Size(488, 115);
+            lblTxtPassword.PasswordChar = '●';
+            lblTxtPassword.Size = new Size(300, 72);
             lblTxtPassword.TabIndex = 10;
             lblTxtPassword.TextBoxReadOnly = false;
             // 
@@ -153,21 +149,21 @@
             header.BackColor = Color.Transparent;
             header.Font = new Font("Segoe UI", 13.875F, FontStyle.Bold, GraphicsUnit.Point, 0);
             header.ForeColor = Color.FromArgb(192, 0, 0);
-            header.Location = new Point(125, 53);
+            header.Location = new Point(77, 33);
+            header.Margin = new Padding(2, 0, 2, 0);
             header.Name = "header";
-            header.Size = new Size(711, 50);
+            header.Size = new Size(466, 32);
             header.TabIndex = 1;
             header.Text = "CHÀO MỪNG BẠN ĐẾN VỚI CỜ TỶ PHÚ";
             // 
             // LoginForm
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(971, 763);
+            ClientSize = new Size(598, 477);
             Controls.Add(header);
             Controls.Add(pnlLogin);
-            Margin = new Padding(5);
             Name = "LoginForm";
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;

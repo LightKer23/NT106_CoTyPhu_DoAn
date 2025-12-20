@@ -16,10 +16,5 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
-
-        private void pbTile20_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }

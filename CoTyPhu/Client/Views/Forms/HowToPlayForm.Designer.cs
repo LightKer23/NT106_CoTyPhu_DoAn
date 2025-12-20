@@ -31,14 +31,15 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(HowToPlayForm));
             rtbRule = new RichTextBox();
             label1 = new Label();
-            btnReturn = new Button();
+            btnCancel = new Button();
             SuspendLayout();
             // 
             // rtbRule
             // 
-            rtbRule.Location = new Point(137, 141);
+            rtbRule.Location = new Point(84, 88);
+            rtbRule.Margin = new Padding(2, 2, 2, 2);
             rtbRule.Name = "rtbRule";
-            rtbRule.Size = new Size(511, 544);
+            rtbRule.Size = new Size(316, 342);
             rtbRule.TabIndex = 0;
             rtbRule.Text = "";
             // 
@@ -48,34 +49,36 @@
             label1.BackColor = Color.Transparent;
             label1.Font = new Font("Segoe UI", 12F, FontStyle.Bold, GraphicsUnit.Point, 0);
             label1.ForeColor = Color.FromArgb(192, 0, 0);
-            label1.Location = new Point(191, 51);
+            label1.Location = new Point(118, 32);
+            label1.Margin = new Padding(2, 0, 2, 0);
             label1.Name = "label1";
-            label1.Size = new Size(410, 45);
+            label1.Size = new Size(254, 28);
             label1.TabIndex = 1;
             label1.Text = "HƯỚNG DẪN CÁCH CHƠI";
             // 
-            // btnReturn
+            // btnCancel
             // 
-            btnReturn.BackColor = Color.Cornsilk;
-            btnReturn.Location = new Point(29, 730);
-            btnReturn.Name = "btnReturn";
-            btnReturn.Size = new Size(180, 60);
-            btnReturn.TabIndex = 2;
-            btnReturn.Text = "Quay lại";
-            btnReturn.UseVisualStyleBackColor = false;
+            btnCancel.BackColor = Color.Cornsilk;
+            btnCancel.Location = new Point(360, 464);
+            btnCancel.Margin = new Padding(2, 2, 2, 2);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new Size(111, 38);
+            btnCancel.TabIndex = 2;
+            btnCancel.Text = "Hủy bỏ";
+            btnCancel.UseVisualStyleBackColor = false;
             // 
             // HowToPlayForm
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(789, 827);
-            Controls.Add(btnReturn);
+            ClientSize = new Size(482, 513);
+            Controls.Add(btnCancel);
             Controls.Add(label1);
             Controls.Add(rtbRule);
-            Margin = new Padding(5, 5, 5, 5);
             Name = "HowToPlayForm";
             ShowIcon = false;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Hướng dẫn chơi";
             ResumeLayout(false);
             PerformLayout();
@@ -85,6 +88,6 @@
 
         private RichTextBox rtbRule;
         private Label label1;
-        private Button btnReturn;
+        private Button btnCancel;
     }
 }

@@ -12,6 +12,14 @@ namespace Client.Views.User_Controls
         }
 
         [Category("Custom")]
+        [Description("Ẩn nội dung TextBox dạng mật khẩu")]
+        public bool IsPassword
+        {
+            get => textBox1.UseSystemPasswordChar;
+            set => textBox1.UseSystemPasswordChar = value;
+        }
+
+        [Category("Custom")]
         [Description("Text hiển thị trên label.")]
         public string LabelText
         {

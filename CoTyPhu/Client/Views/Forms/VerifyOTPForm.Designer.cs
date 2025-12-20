@@ -51,20 +51,18 @@
             pnlVerifyOTP.Controls.Add(textBox1);
             pnlVerifyOTP.Controls.Add(label2);
             pnlVerifyOTP.Controls.Add(label1);
-            pnlVerifyOTP.Location = new Point(130, 104);
-            pnlVerifyOTP.Margin = new Padding(5);
+            pnlVerifyOTP.Location = new Point(80, 65);
             pnlVerifyOTP.Name = "pnlVerifyOTP";
-            pnlVerifyOTP.Size = new Size(616, 446);
+            pnlVerifyOTP.Size = new Size(380, 280);
             pnlVerifyOTP.TabIndex = 0;
             // 
             // label4
             // 
             label4.AutoSize = true;
             label4.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label4.Location = new Point(107, 157);
-            label4.Margin = new Padding(5, 0, 5, 0);
+            label4.Location = new Point(66, 98);
             label4.Name = "label4";
-            label4.Size = new Size(402, 32);
+            label4.Size = new Size(249, 20);
             label4.TabIndex = 6;
             label4.Text = "Vui lòng nhập mã xác thực bên dưới";
             // 
@@ -73,10 +71,9 @@
             btnVerify.BackgroundImage = (Image)resources.GetObject("btnVerify.BackgroundImage");
             btnVerify.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             btnVerify.ForeColor = SystemColors.ButtonHighlight;
-            btnVerify.Location = new Point(65, 292);
-            btnVerify.Margin = new Padding(5);
+            btnVerify.Location = new Point(40, 182);
             btnVerify.Name = "btnVerify";
-            btnVerify.Size = new Size(482, 46);
+            btnVerify.Size = new Size(297, 29);
             btnVerify.TabIndex = 5;
             btnVerify.Text = "Xác thực";
             btnVerify.UseVisualStyleBackColor = true;
@@ -84,10 +81,9 @@
             // linkLabel1
             // 
             linkLabel1.AutoSize = true;
-            linkLabel1.Location = new Point(372, 357);
-            linkLabel1.Margin = new Padding(5, 0, 5, 0);
+            linkLabel1.Location = new Point(229, 223);
             linkLabel1.Name = "linkLabel1";
-            linkLabel1.Size = new Size(81, 32);
+            linkLabel1.Size = new Size(52, 20);
             linkLabel1.TabIndex = 4;
             linkLabel1.TabStop = true;
             linkLabel1.Text = "Gửi lại";
@@ -96,19 +92,17 @@
             // 
             label3.AutoSize = true;
             label3.Font = new Font("Tahoma", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            label3.Location = new Point(134, 357);
-            label3.Margin = new Padding(5, 0, 5, 0);
+            label3.Location = new Point(82, 223);
             label3.Name = "label3";
-            label3.Size = new Size(242, 29);
+            label3.Size = new Size(150, 18);
             label3.TabIndex = 3;
             label3.Text = "Chưa nhận được mã?";
             // 
             // textBox1
             // 
-            textBox1.Location = new Point(65, 222);
-            textBox1.Margin = new Padding(5);
+            textBox1.Location = new Point(40, 139);
             textBox1.Name = "textBox1";
-            textBox1.Size = new Size(485, 39);
+            textBox1.Size = new Size(300, 27);
             textBox1.TabIndex = 2;
             // 
             // label2
@@ -116,10 +110,9 @@
             label2.AutoSize = true;
             label2.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
             label2.ForeColor = SystemColors.WindowFrame;
-            label2.Location = new Point(103, 106);
-            label2.Margin = new Padding(5, 0, 5, 0);
+            label2.Location = new Point(63, 66);
             label2.Name = "label2";
-            label2.Size = new Size(406, 32);
+            label2.Size = new Size(254, 20);
             label2.TabIndex = 1;
             label2.Text = "Mã xác thực được gửi sang email xxx";
             // 
@@ -128,23 +121,22 @@
             label1.AutoSize = true;
             label1.Font = new Font("Segoe UI", 16.125F, FontStyle.Regular, GraphicsUnit.Point, 0);
             label1.ForeColor = Color.FromArgb(192, 0, 0);
-            label1.Location = new Point(156, 47);
-            label1.Margin = new Padding(5, 0, 5, 0);
+            label1.Location = new Point(96, 29);
             label1.Name = "label1";
-            label1.Size = new Size(277, 59);
+            label1.Size = new Size(173, 37);
             label1.TabIndex = 0;
             label1.Text = "Xác thực OTP";
             // 
             // VerifyOTPForm
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(880, 650);
+            ClientSize = new Size(542, 406);
             Controls.Add(pnlVerifyOTP);
-            Margin = new Padding(5);
             Name = "VerifyOTPForm";
             ShowIcon = false;
+            StartPosition = FormStartPosition.CenterScreen;
             Text = "Quên mật khẩu";
             pnlVerifyOTP.ResumeLayout(false);
             pnlVerifyOTP.PerformLayout();

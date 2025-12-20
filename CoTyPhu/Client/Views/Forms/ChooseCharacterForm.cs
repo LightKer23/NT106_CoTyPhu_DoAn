@@ -16,5 +16,10 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void ChooseCharacterForm_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }
