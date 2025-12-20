@@ -42,10 +42,9 @@
             // 
             btnPlayWithCmp.BackColor = Color.MistyRose;
             btnPlayWithCmp.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnPlayWithCmp.Location = new Point(208, 259);
-            btnPlayWithCmp.Margin = new Padding(5);
+            btnPlayWithCmp.Location = new Point(128, 162);
             btnPlayWithCmp.Name = "btnPlayWithCmp";
-            btnPlayWithCmp.Size = new Size(244, 70);
+            btnPlayWithCmp.Size = new Size(150, 44);
             btnPlayWithCmp.TabIndex = 1;
             btnPlayWithCmp.Text = "Chơi với máy";
             btnPlayWithCmp.UseVisualStyleBackColor = false;
@@ -54,10 +53,9 @@
             // 
             btnPlayWithPlayer.BackColor = Color.MistyRose;
             btnPlayWithPlayer.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnPlayWithPlayer.Location = new Point(208, 339);
-            btnPlayWithPlayer.Margin = new Padding(5);
+            btnPlayWithPlayer.Location = new Point(128, 212);
             btnPlayWithPlayer.Name = "btnPlayWithPlayer";
-            btnPlayWithPlayer.Size = new Size(244, 70);
+            btnPlayWithPlayer.Size = new Size(150, 44);
             btnPlayWithPlayer.TabIndex = 2;
             btnPlayWithPlayer.Text = "Chơi với người";
             btnPlayWithPlayer.UseVisualStyleBackColor = false;
@@ -66,10 +64,9 @@
             // 
             btnGuide.BackColor = Color.MistyRose;
             btnGuide.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnGuide.Location = new Point(208, 419);
-            btnGuide.Margin = new Padding(5);
+            btnGuide.Location = new Point(128, 262);
             btnGuide.Name = "btnGuide";
-            btnGuide.Size = new Size(244, 71);
+            btnGuide.Size = new Size(150, 44);
             btnGuide.TabIndex = 3;
             btnGuide.Text = "Hướng dẫn chơi";
             btnGuide.UseVisualStyleBackColor = false;
@@ -78,10 +75,9 @@
             // 
             btnSetting.BackColor = Color.MistyRose;
             btnSetting.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnSetting.Location = new Point(208, 500);
-            btnSetting.Margin = new Padding(5);
+            btnSetting.Location = new Point(128, 312);
             btnSetting.Name = "btnSetting";
-            btnSetting.Size = new Size(244, 71);
+            btnSetting.Size = new Size(150, 44);
             btnSetting.TabIndex = 4;
             btnSetting.Text = "Cài đặt";
             btnSetting.UseVisualStyleBackColor = false;
@@ -90,10 +86,9 @@
             // 
             btnExit.BackColor = Color.MistyRose;
             btnExit.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnExit.Location = new Point(208, 581);
-            btnExit.Margin = new Padding(5);
+            btnExit.Location = new Point(128, 363);
             btnExit.Name = "btnExit";
-            btnExit.Size = new Size(244, 70);
+            btnExit.Size = new Size(150, 44);
             btnExit.TabIndex = 5;
             btnExit.Text = "Thoát";
             btnExit.UseVisualStyleBackColor = false;
@@ -102,25 +97,26 @@
             // 
             pictureBox1.BackColor = Color.Transparent;
             pictureBox1.BackgroundImage = (Image)resources.GetObject("pictureBox1.BackgroundImage");
-            pictureBox1.Location = new Point(117, 53);
+            pictureBox1.Location = new Point(0, 10);
+            pictureBox1.Margin = new Padding(2, 2, 2, 2);
             pictureBox1.Name = "pictureBox1";
-            pictureBox1.Size = new Size(428, 101);
+            pictureBox1.Size = new Size(410, 103);
+            pictureBox1.SizeMode = PictureBoxSizeMode.CenterImage;
             pictureBox1.TabIndex = 6;
             pictureBox1.TabStop = false;
             // 
             // MenuForm
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(674, 784);
+            ClientSize = new Size(415, 490);
             Controls.Add(pictureBox1);
             Controls.Add(btnExit);
             Controls.Add(btnSetting);
             Controls.Add(btnGuide);
             Controls.Add(btnPlayWithPlayer);
             Controls.Add(btnPlayWithCmp);
-            Margin = new Padding(5);
             Name = "MenuForm";
             ShowIcon = false;
             Text = "Cờ tỷ phú";
