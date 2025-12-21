@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Client.Services.Network;
+using System;
 using System.Windows.Forms;
 
 namespace Client.Views.Forms
@@ -15,36 +9,93 @@ namespace Client.Views.Forms
         public LoginForm()
         {
             InitializeComponent();
+            this.AcceptButton = btnLogin;
         }
 
-        private void lblTxtPassword_Load(object sender, EventArgs e)
+        private async void LoginForm_Load(object sender, EventArgs e)
         {
-
-        }
-
-        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
-        {
-
-        }
-
-        private void splitContainer1_Panel1_Paint(object sender, PaintEventArgs e)
-        {
-
+            try
+            {
+                // 🔹 KẾT NỐI 1 LẦN DUY NHẤT
+                await ClientSession.ConnectAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không kết nối được server: " + ex.Message);
+            }
         }
 
         private void lkLblRegister_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            (new RegisterForm()).Show();
+            this.Hide();
+
+            using (var registerForm = new RegisterForm())
+            {
+                registerForm.ShowDialog();
+            }
+
+            this.Show();
         }
 
-        private void label2_Click(object sender, EventArgs e)
+        private async void btnLogin_Click(object sender, EventArgs e)
         {
+            string username = lblTxtUsername.Text.Trim();
+            string password = lblTxtPassword.Text;
 
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ tài khoản và mật khẩu.");
+                return;
+            }
+
+            btnLogin.Enabled = false;
+
+            try
+            {
+                await ClientSession.ConnectAsync();
+
+                var res = await ClientSession.Tcp.LoginAsync(username, password);
+
+                if (!res.Success)
+                {
+                    MessageBox.Show(res.Message ?? "Đăng nhập thất bại");
+                    return;
+                }
+
+                ClientSession.AccountID = res.IDAccount ?? 0;
+
+                MessageBox.Show("Đăng nhập thành công!");
+
+                this.Hide();
+                var menuForm = new MenuForm();
+                menuForm.FormClosed += (s, args) =>
+                {
+                    ClientSession.Disconnect();
+                    this.Close();
+                };
+                menuForm.Show();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Lỗi đăng nhập: " + ex.Message);
+            }
+            finally
+            {
+                btnLogin.Enabled = true;
+            }
         }
 
-        private void btnLogin_Click(object sender, EventArgs e)
+        private void lkLblForgotPsswrd_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
+            this.Hide();
 
+            using (var forgotForm = new ForgotPasswordForm())
+            {
+                forgotForm.ShowDialog();
+            }
+
+            this.Show();
         }
+
     }
 }

@@ -77,6 +77,7 @@
             btnVerify.TabIndex = 5;
             btnVerify.Text = "Xác thực";
             btnVerify.UseVisualStyleBackColor = true;
+            btnVerify.Click += btnVerify_Click;
             // 
             // linkLabel1
             // 
