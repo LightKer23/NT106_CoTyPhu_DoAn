@@ -40,6 +40,7 @@
             btnCreateRoom.TabIndex = 1;
             btnCreateRoom.Text = "Tạo phòng";
             btnCreateRoom.UseVisualStyleBackColor = true;
+            btnCreateRoom.Click += btnCreateRoom_Click;
             // 
             // lblOr
             // 
@@ -66,6 +67,7 @@
             btnJoinRoom.TabIndex = 4;
             btnJoinRoom.Text = "Vào phòng";
             btnJoinRoom.UseVisualStyleBackColor = true;
+            btnJoinRoom.Click += btnJoinRoom_Click;
             // 
             // RoomHubForm
             // 

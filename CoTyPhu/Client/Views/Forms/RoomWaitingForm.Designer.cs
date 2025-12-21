@@ -17,7 +17,6 @@
         {
             lblRoomId = new Label();
             lstPlayers = new ListBox();
-            btnChooseCharacter = new Button();
             btnStart = new Button();
             btnLeave = new Button();
             SuspendLayout();
@@ -39,23 +38,15 @@
             lstPlayers.Size = new Size(470, 164);
             lstPlayers.TabIndex = 2;
             // 
-            // btnChooseCharacter
-            // 
-            btnChooseCharacter.Location = new Point(25, 260);
-            btnChooseCharacter.Name = "btnChooseCharacter";
-            btnChooseCharacter.Size = new Size(150, 40);
-            btnChooseCharacter.TabIndex = 3;
-            btnChooseCharacter.Text = "Chọn nhân vật";
-            btnChooseCharacter.UseVisualStyleBackColor = true;
-            // 
             // btnStart
             // 
-            btnStart.Location = new Point(192, 260);
+            btnStart.Location = new Point(25, 260);
             btnStart.Name = "btnStart";
             btnStart.Size = new Size(150, 40);
             btnStart.TabIndex = 4;
             btnStart.Text = "Bắt đầu";
             btnStart.UseVisualStyleBackColor = true;
+            btnStart.Click += btnStart_Click;
             // 
             // btnLeave
             // 
@@ -65,6 +56,7 @@
             btnLeave.TabIndex = 5;
             btnLeave.Text = "Rời phòng";
             btnLeave.UseVisualStyleBackColor = true;
+            btnLeave.Click += btnLeave_Click;
             // 
             // RoomWaitingForm
             // 
@@ -73,7 +65,6 @@
             ClientSize = new Size(520, 330);
             Controls.Add(lblRoomId);
             Controls.Add(lstPlayers);
-            Controls.Add(btnChooseCharacter);
             Controls.Add(btnStart);
             Controls.Add(btnLeave);
             Name = "RoomWaitingForm";
@@ -88,7 +79,6 @@
 
         private Label lblRoomId;
         private ListBox lstPlayers;
-        private Button btnChooseCharacter;
         private Button btnStart;
         private Button btnLeave;
     }

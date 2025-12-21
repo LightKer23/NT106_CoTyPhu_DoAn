@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Constracts.Room
+namespace Common.Contracts.Room
 {
-    public class StartMatchEvent
+    public class StartMatchResponse
     {
-        public int MatchID { get; set; }
+        public bool Success { get; set; }
     }
 }

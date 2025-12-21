@@ -70,6 +70,7 @@
             btnChoose.TabIndex = 13;
             btnChoose.Text = "Chọn";
             btnChoose.UseVisualStyleBackColor = false;
+            btnChoose.Click += btnChoose_Click;
             // 
             // label2
             // 
