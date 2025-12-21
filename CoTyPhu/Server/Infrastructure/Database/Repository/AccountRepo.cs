@@ -195,6 +195,34 @@ namespace Server.Infrastructure.Database.Repository
         }
 
 
+        public int GetIdByLogin(string username, string passwordHash)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var cmd = new SqlCommand(@"
+            SELECT IDAccount
+            FROM Account
+            WHERE Username = @u AND PasswordHash = @p", conn);
+
+                cmd.Parameters.AddWithValue("@u", username);
+                cmd.Parameters.AddWithValue("@p", passwordHash);
+
+                object result = cmd.ExecuteScalar();
+
+                if (result != null && result != DBNull.Value)
+                    return (int)result;
+            }
+            catch
+            {
+                // log nếu cần
+            }
+
+            return -1; // login thất bại
+        }
+
         //XÓA TÀI KHOẢN
         public bool Delete(int id)
         {

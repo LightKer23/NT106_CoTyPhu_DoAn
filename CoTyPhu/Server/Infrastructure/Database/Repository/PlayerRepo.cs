@@ -56,7 +56,8 @@ namespace Server.Infrastructure.Database.Repository
 
 
         // Lấy thông tin của Player
-        public Player GetPlayer(int idMatch, int idPlayer)
+        public Common.Domain.Models.Entities.Player GetPlayer(int idMatch, int idPlayer)
+
         {
             try
             {
@@ -75,7 +76,7 @@ namespace Server.Infrastructure.Database.Repository
                 using var rd = cmd.ExecuteReader();
                 if (rd.Read())
                 {
-                    return new Player
+                    return new Common.Domain.Models.Entities.Player
                     {
                         IDPlayer = rd.GetInt32(0),
                         IDMatch = rd.GetInt32(1),
