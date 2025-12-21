@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
 
-namespace Client.Network
+namespace Client.Services.Network
 {
     public static class ClientSession
     {

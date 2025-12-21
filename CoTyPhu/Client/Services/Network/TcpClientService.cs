@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace Client.Network
+namespace Client.Services.Network
 {
     public sealed class TcpClientService : IDisposable
     {
