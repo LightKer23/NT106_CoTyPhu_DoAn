@@ -9,9 +9,4 @@ public class TaxTile : Tile
     {
         this.taxType = taxType;
     }
-
-    public override void OnPlayerLand(Player player)
-    {
-        // Logic xử lý khi player đứng lên ô đất
-    }
 }
