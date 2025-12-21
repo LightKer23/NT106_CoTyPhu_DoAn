@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 public class PropertyTile : Tile
 {
-    private Player? owner = null;
+    private int? owner = null;
 
     public int landPrice;
     public int housePrice;

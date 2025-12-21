@@ -62,3 +62,15 @@ GO
 drop table match
 drop table Player
 drop table Property
+
+
+
+INSERT INTO Account (Username, PasswordHash, Email, DisplayName)
+VALUES (
+    N'hahatest',
+    N'123456',
+    N'hahatest@gmail.com',
+    N'Haha Test'
+);
+
+select * from account
