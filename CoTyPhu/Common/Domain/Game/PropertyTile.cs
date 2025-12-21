@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 public class PropertyTile : Tile
 {
-    private int? owner = null;
+    public int? PlayerOwnerId = null;
 
     public int landPrice;
     public int housePrice;
@@ -23,7 +23,6 @@ public class PropertyTile : Tile
         int sellPrice)
         : base(name, TileType.Property)
     {
-        this.owner = null;
         this.landPrice = landPrice;
         this.housePrice = housePrice;
         this.hotelPrice = hotelPrice;

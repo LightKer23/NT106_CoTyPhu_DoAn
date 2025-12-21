@@ -2,7 +2,7 @@
 public class UtilityTile : Tile
 {
     public int buyPrice { get; set; }
-    public int? Owner { get; set; } = null;
+    public Player? Owner { get; set; } = null;
     public int sellPrice { get; set; }
 
     private Dice dice = new Dice();
