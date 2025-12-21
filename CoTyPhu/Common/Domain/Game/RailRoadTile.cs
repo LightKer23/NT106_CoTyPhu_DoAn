@@ -1,31 +1,17 @@
 ﻿using Common.Domain.Game.Enums;
-
-public class RailroadTile : Tile
+public class RailRoadTile : Tile
 {
-    private Player owner { get; set; };
-    private int price { get; set; };
+    private Player? owner { get; set; } = null;
+    private int buyPrice { get; set; }
+    private int sellPrice {  get; set; }
 
-    public RailroadTile(
+    public RailRoadTile(
         string name,
-        int price)
+        int buyPrice,
+        int sellPrice)
         : base(name, TileType.Railroad)
     {
-        this.price = price;
-        this.owner = null;
-    }
-
-
-    public int calculateRent(int numOwned)
-    {
-        //Tính số tiền phải trả tương ứng với số bến xe người chơi hiện có
-    }
-
-    public void sellAsset()
-    {
-        //Bán ô
-    }
-    public override void OnPlayerLand(Player player)
-    {
-        // Logic xử lý khi player đứng lên ô Bến xe
+        this.buyPrice = buyPrice;
+        this.sellPrice = sellPrice;
     }
 }

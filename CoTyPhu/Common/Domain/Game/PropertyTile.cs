@@ -1,24 +1,26 @@
 ﻿using Common.Domain.Game.Enums;
-
+using System.Collections.Generic;
 public class PropertyTile : Tile
 {
-    private Player owner;
+    private Player? owner = null;
 
-    private int landPrice;
-    private int housePrice;
-    private int hotelPrice;
+    public int landPrice;
+    public int housePrice;
+    public int hotelPrice;
 
-    private int houseCount;
-    private bool hasHotel;
+    public int houseCount;
+    public bool hasHotel;
 
-    private int[] rentPrice;
+    public List<int> rentPrice;
+    public int sellPrice;
 
     public PropertyTile(
         string name,
         int landPrice,
         int housePrice,
         int hotelPrice,
-        int[] rentPrice)
+        List<int> rentPrice,
+        int sellPrice)
         : base(name, TileType.Property)
     {
         this.owner = null;
@@ -30,10 +32,6 @@ public class PropertyTile : Tile
         this.hasHotel = false;
 
         this.rentPrice = rentPrice;
-    }
-
-    public override void OnPlayerLand(Player player)
-    {
-        // Logic xử lý khi player đứng lên ô đất
+        this.sellPrice = sellPrice;
     }
 }

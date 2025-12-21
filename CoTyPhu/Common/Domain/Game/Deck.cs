@@ -1,5 +1,6 @@
 using Common.Domain.Game.Enums;
-
+using System;
+using System.Collections.Generic;
 public class Deck
 {
     private readonly Random random = new Random();
@@ -8,20 +9,5 @@ public class Deck
     public Deck(List<Card> initialCards)
     {
         cards = initialCards;
-    }
-
-    public Card Draw()
-    {
-
-    }
-
-    public void Shuffle()
-    {
-
-    }
-
-    public void ReturnCard(Card card)
-    {
-
     }
 }
