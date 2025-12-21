@@ -31,7 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ChooseCharacterForm));
             label1 = new Label();
             pictureBox1 = new PictureBox();
-            button1 = new Button();
+            btnChoose = new Button();
             label2 = new Label();
             btnChar3 = new Button();
             btnChar4 = new Button();
@@ -60,16 +60,16 @@
             pictureBox1.TabIndex = 7;
             pictureBox1.TabStop = false;
             // 
-            // button1
+            // btnChoose
             // 
-            button1.BackColor = Color.MistyRose;
-            button1.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            button1.Location = new Point(496, 351);
-            button1.Name = "button1";
-            button1.Size = new Size(120, 40);
-            button1.TabIndex = 13;
-            button1.Text = "Vào phòng";
-            button1.UseVisualStyleBackColor = false;
+            btnChoose.BackColor = Color.MistyRose;
+            btnChoose.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnChoose.Location = new Point(496, 351);
+            btnChoose.Name = "btnChoose";
+            btnChoose.Size = new Size(120, 40);
+            btnChoose.TabIndex = 13;
+            btnChoose.Text = "Chọn";
+            btnChoose.UseVisualStyleBackColor = false;
             // 
             // label2
             // 
@@ -125,7 +125,7 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
             ClientSize = new Size(642, 413);
-            Controls.Add(button1);
+            Controls.Add(btnChoose);
             Controls.Add(label2);
             Controls.Add(btnChar3);
             Controls.Add(btnChar4);
@@ -147,7 +147,7 @@
 
         private Label label1;
         private PictureBox pictureBox1;
-        private Button button1;
+        private Button btnChoose;
         private Label label2;
         private Button btnChar3;
         private Button btnChar4;
