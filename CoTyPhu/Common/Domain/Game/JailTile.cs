@@ -1,9 +1,7 @@
 using Common.Domain.Game.Enums;
-
 public class JailTile : Tile
 {
-    public void onPlayerLand(Player player)
-    {
-
-    }
+    public JailTile()
+        :base("Tham Tu", TileType.Jail)
+    { }
 }

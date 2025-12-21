@@ -1,5 +1,4 @@
 ﻿using Common.Domain.Game.Enums;
-
 public class Card
 {
     public string Description { get; set; }

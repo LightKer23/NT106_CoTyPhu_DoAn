@@ -1,15 +1,11 @@
 using Common.Domain.Game.Enums;
+using System.Collections.Generic;
 
 public class CommunityChestDeck : Deck
 {
     public CommunityChestDeck(List<Card> initialCards)
+        : base(initialCards)
     {
-        foreach (var card in initialCards)
-        {
-            if (card.Type == CardType.CommunityChest)
-                cards.Add(card);
-        }
 
-        Shuffle();
     }
 }

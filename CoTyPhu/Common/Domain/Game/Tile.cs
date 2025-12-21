@@ -1,5 +1,4 @@
 using Common.Domain.Game.Enums;
-
 public abstract class Tile
 {
     //Attribute
@@ -10,12 +9,7 @@ public abstract class Tile
     //Method
     public Tile(string name, TileType type)
     {
-        this.Name = name;
+        this.name = name;
         this.type = type;
-    }
-
-    public abstract void OnPlayerLand(Player player)
-    {
-
     }
 }
