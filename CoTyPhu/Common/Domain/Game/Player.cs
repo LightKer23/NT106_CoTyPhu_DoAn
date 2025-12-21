@@ -9,13 +9,4 @@ public class Player
 
     public bool HasGetOutOfJailCard { get; set; }
     public bool IsWinner { get; set; }
-
-    private Dice dice = new Dice();
-
-    public int RollDice()
-    {
-        int total = dice.Roll();
-
-        return total;
-    }
 }
