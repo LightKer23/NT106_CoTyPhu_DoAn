@@ -15,6 +15,7 @@
 
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RoomWaitingForm));
             lblRoomId = new Label();
             lstPlayers = new ListBox();
             btnChooseCharacter = new Button();
@@ -25,57 +26,69 @@
             // lblRoomId
             // 
             lblRoomId.AutoSize = true;
+            lblRoomId.BackColor = Color.Transparent;
             lblRoomId.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
-            lblRoomId.Location = new Point(20, 20);
+            lblRoomId.ForeColor = Color.Red;
+            lblRoomId.Location = new Point(32, 32);
+            lblRoomId.Margin = new Padding(5, 0, 5, 0);
             lblRoomId.Name = "lblRoomId";
-            lblRoomId.Size = new Size(38, 28);
+            lblRoomId.Size = new Size(63, 45);
             lblRoomId.TabIndex = 0;
             lblRoomId.Text = "ID:";
             // 
             // lstPlayers
             // 
-            lstPlayers.Location = new Point(25, 65);
+            lstPlayers.Location = new Point(41, 104);
+            lstPlayers.Margin = new Padding(5, 5, 5, 5);
             lstPlayers.Name = "lstPlayers";
-            lstPlayers.Size = new Size(470, 164);
+            lstPlayers.Size = new Size(761, 260);
             lstPlayers.TabIndex = 2;
             // 
             // btnChooseCharacter
             // 
-            btnChooseCharacter.Location = new Point(25, 260);
+            btnChooseCharacter.BackColor = Color.Azure;
+            btnChooseCharacter.Location = new Point(41, 416);
+            btnChooseCharacter.Margin = new Padding(5, 5, 5, 5);
             btnChooseCharacter.Name = "btnChooseCharacter";
-            btnChooseCharacter.Size = new Size(150, 40);
+            btnChooseCharacter.Size = new Size(244, 64);
             btnChooseCharacter.TabIndex = 3;
             btnChooseCharacter.Text = "Chọn nhân vật";
-            btnChooseCharacter.UseVisualStyleBackColor = true;
+            btnChooseCharacter.UseVisualStyleBackColor = false;
             // 
             // btnStart
             // 
-            btnStart.Location = new Point(192, 260);
+            btnStart.BackColor = Color.PapayaWhip;
+            btnStart.Location = new Point(312, 416);
+            btnStart.Margin = new Padding(5, 5, 5, 5);
             btnStart.Name = "btnStart";
-            btnStart.Size = new Size(150, 40);
+            btnStart.Size = new Size(244, 64);
             btnStart.TabIndex = 4;
             btnStart.Text = "Bắt đầu";
-            btnStart.UseVisualStyleBackColor = true;
+            btnStart.UseVisualStyleBackColor = false;
             // 
             // btnLeave
             // 
-            btnLeave.Location = new Point(355, 260);
+            btnLeave.BackColor = Color.White;
+            btnLeave.Location = new Point(577, 416);
+            btnLeave.Margin = new Padding(5, 5, 5, 5);
             btnLeave.Name = "btnLeave";
-            btnLeave.Size = new Size(140, 40);
+            btnLeave.Size = new Size(228, 64);
             btnLeave.TabIndex = 5;
             btnLeave.Text = "Rời phòng";
-            btnLeave.UseVisualStyleBackColor = true;
+            btnLeave.UseVisualStyleBackColor = false;
             // 
             // RoomWaitingForm
             // 
-            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(520, 330);
+            BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
+            ClientSize = new Size(845, 528);
             Controls.Add(lblRoomId);
             Controls.Add(lstPlayers);
             Controls.Add(btnChooseCharacter);
             Controls.Add(btnStart);
             Controls.Add(btnLeave);
+            Margin = new Padding(5, 5, 5, 5);
             Name = "RoomWaitingForm";
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
