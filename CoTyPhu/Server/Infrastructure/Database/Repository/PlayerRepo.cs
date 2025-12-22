@@ -18,34 +18,33 @@ namespace Server.Infrastructure.Database.Repository
 
 
         // Thêm 1 Player trong trận đó khi chưa bắt đầu
-        public int InsertPlayer(int idMatch, int idAccount)
+        public int InsertPlayer(int idMatch, int idAccount, int characterIndex)
         {
             try
             {
                 using var conn = _db.GetConnection();
                 conn.Open();
 
-                // Lấy IDPlayer mới: COUNT(*) + 1
                 var getNewIdCmd = new SqlCommand(@"
             SELECT COUNT(*) + 1 
             FROM Player 
             WHERE IDMatch = @mid", conn);
 
                 getNewIdCmd.Parameters.AddWithValue("@mid", idMatch);
-
                 int newIdPlayer = (int)getNewIdCmd.ExecuteScalar();
 
-                // Insert player
                 var insertCmd = new SqlCommand(@"
-            INSERT INTO Player(IDMatch, IDPlayer, IDAccount, Money, Position, StatusPlayer)
-            VALUES (@mid, @pid, @acc, 1500, 0, 'Ready')", conn);
+            INSERT INTO Player
+            (IDMatch, IDPlayer, IDAccount, Money, Position, StatusPlayer, CharacterIndex)
+            VALUES
+            (@mid, @pid, @acc, 1500, 0, 'Ready', @char)", conn);
 
                 insertCmd.Parameters.AddWithValue("@mid", idMatch);
                 insertCmd.Parameters.AddWithValue("@pid", newIdPlayer);
                 insertCmd.Parameters.AddWithValue("@acc", idAccount);
+                insertCmd.Parameters.AddWithValue("@char", characterIndex);
 
                 insertCmd.ExecuteNonQuery();
-
                 return newIdPlayer;
             }
             catch
@@ -53,6 +52,7 @@ namespace Server.Infrastructure.Database.Repository
                 return -1;
             }
         }
+
 
 
         // Lấy thông tin của Player
@@ -65,7 +65,7 @@ namespace Server.Infrastructure.Database.Repository
                 conn.Open();
 
                 var cmd = new SqlCommand(@"
-                    SELECT IDPlayer, IDMatch, IDAccount, Rank, Money, Position, StatusPlayer
+                    SELECT IDPlayer, IDMatch, IDAccount, Rank, Money, Position, StatusPlayer, CharacterIndex
                     FROM Player 
                     WHERE IDMatch=@mid AND IDPlayer=@pid",
                     conn);
@@ -76,7 +76,7 @@ namespace Server.Infrastructure.Database.Repository
                 using var rd = cmd.ExecuteReader();
                 if (rd.Read())
                 {
-                    return new Common.Domain.Models.Entities.Player
+                    return new Player
                     {
                         IDPlayer = rd.GetInt32(0),
                         IDMatch = rd.GetInt32(1),
@@ -84,8 +84,10 @@ namespace Server.Infrastructure.Database.Repository
                         Rank = rd.IsDBNull(3) ? null : rd.GetInt32(3),
                         Money = rd.GetInt32(4),
                         Position = rd.GetInt32(5),
-                        StatusPlayer = rd.GetString(6)
+                        StatusPlayer = rd.GetString(6),
+                        CharacterIndex = rd.GetInt32(7)
                     };
+
                 }
             }
             catch { }
@@ -112,6 +114,42 @@ namespace Server.Infrastructure.Database.Repository
                 cmd.Parameters.AddWithValue("@m", money);
                 cmd.Parameters.AddWithValue("@p", position);
                 cmd.Parameters.AddWithValue("@s", status);
+
+                return cmd.ExecuteNonQuery() > 0;
+            }
+            catch { return false; }
+        }
+
+        public bool IsCharacterTaken(int matchId, int characterIndex)
+        {
+            using var conn = _db.GetConnection();
+            conn.Open();
+
+            var cmd = new SqlCommand(@"
+        SELECT COUNT(*) 
+        FROM Player 
+        WHERE IDMatch = @mid AND CharacterIndex = @char", conn);
+
+            cmd.Parameters.AddWithValue("@mid", matchId);
+            cmd.Parameters.AddWithValue("@char", characterIndex);
+
+            return (int)cmd.ExecuteScalar() > 0;
+        }
+
+
+        public bool DeletePlayer(int idMatch, int idPlayer)
+        {
+            try
+            {
+                using var conn = _db.GetConnection();
+                conn.Open();
+
+                var cmd = new SqlCommand(@"
+            DELETE FROM Player
+            WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
+
+                cmd.Parameters.AddWithValue("@mid", idMatch);
+                cmd.Parameters.AddWithValue("@pid", idPlayer);
 
                 return cmd.ExecuteNonQuery() > 0;
             }
@@ -198,7 +236,7 @@ namespace Server.Infrastructure.Database.Repository
             {
                 var matchRepo = new MatchRepo(_db);
 
-                matchRepo.IncreasePlayerCount(idMatch: idMatch, -1);
+                matchRepo.DecreasePlayerCount(idMatch);
             }
             catch { }
 
@@ -210,7 +248,7 @@ namespace Server.Infrastructure.Database.Repository
                 int alive = playerRepo.CountAlive(idMatch);
 
                 if (alive == 1)
-                    matchRepo.UpdateEnd(idMatch);
+                    matchRepo.EndMatch(idMatch);
             }
             catch { }
 

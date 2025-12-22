@@ -10,6 +10,16 @@ namespace Common.Contracts.Room
     {
         public bool Success { get; set; }
         public int RoomId { get; set; }
-        public List<int> PlayerRooms { get; set; } = new();
+
+        public List<int> PlayerRooms { get; set; } = new(); 
+
+        public List<RoomPlayerInfo> Players { get; set; } = new();
+    }
+
+    public class RoomPlayerInfo
+    {
+        public int PlayerId { get; set; }        
+        public int CharacterIndex { get; set; }  
     }
 }
+

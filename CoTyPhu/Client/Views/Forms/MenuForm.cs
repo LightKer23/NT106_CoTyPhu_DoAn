@@ -16,5 +16,15 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
+
+        private void btnPlayWithPlayer_Click(object sender, EventArgs e)
+        {
+            this.Hide();
+
+            var frm = new RoomHubForm();
+            frm.Owner = this;
+            frm.Show();
+
+        }
     }
 }

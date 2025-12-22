@@ -66,7 +66,7 @@
             lblTxtPsswrdAgain.IsPassword = true;
             lblTxtPsswrdAgain.LabelText = "Nhập lại mật khẩu";
             lblTxtPsswrdAgain.Location = new Point(40, 329);
-            lblTxtPsswrdAgain.Margin = new Padding(5, 5, 5, 5);
+            lblTxtPsswrdAgain.Margin = new Padding(5);
             lblTxtPsswrdAgain.Name = "lblTxtPsswrdAgain";
             lblTxtPsswrdAgain.PasswordChar = '●';
             lblTxtPsswrdAgain.Size = new Size(300, 72);
@@ -78,7 +78,7 @@
             lblTxtPsswrd.IsPassword = true;
             lblTxtPsswrd.LabelText = "Mật khẩu";
             lblTxtPsswrd.Location = new Point(40, 262);
-            lblTxtPsswrd.Margin = new Padding(5, 5, 5, 5);
+            lblTxtPsswrd.Margin = new Padding(5);
             lblTxtPsswrd.Name = "lblTxtPsswrd";
             lblTxtPsswrd.PasswordChar = '●';
             lblTxtPsswrd.Size = new Size(300, 72);
@@ -90,13 +90,12 @@
             lblTxtEmail.IsPassword = false;
             lblTxtEmail.LabelText = "Email";
             lblTxtEmail.Location = new Point(40, 192);
-            lblTxtEmail.Margin = new Padding(5, 5, 5, 5);
+            lblTxtEmail.Margin = new Padding(5);
             lblTxtEmail.Name = "lblTxtEmail";
             lblTxtEmail.PasswordChar = '\0';
             lblTxtEmail.Size = new Size(300, 72);
             lblTxtEmail.TabIndex = 16;
             lblTxtEmail.TextBoxReadOnly = false;
-            lblTxtEmail.Load += lblTxtEmail_Load;
             // 
             // lkLblLogin
             // 
@@ -139,7 +138,7 @@
             lblTxtFullname.IsPassword = false;
             lblTxtFullname.LabelText = "Họ tên người dùng";
             lblTxtFullname.Location = new Point(40, 58);
-            lblTxtFullname.Margin = new Padding(5, 5, 5, 5);
+            lblTxtFullname.Margin = new Padding(5);
             lblTxtFullname.Name = "lblTxtFullname";
             lblTxtFullname.PasswordChar = '\0';
             lblTxtFullname.Size = new Size(300, 72);
@@ -157,13 +156,14 @@
             btnRegister.TabIndex = 11;
             btnRegister.Text = "Đăng ký";
             btnRegister.UseVisualStyleBackColor = true;
+            btnRegister.Click += btnRegister_Click;
             // 
             // lblTxtUsername
             // 
             lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
             lblTxtUsername.Location = new Point(40, 127);
-            lblTxtUsername.Margin = new Padding(5, 5, 5, 5);
+            lblTxtUsername.Margin = new Padding(5);
             lblTxtUsername.Name = "lblTxtUsername";
             lblTxtUsername.PasswordChar = '\0';
             lblTxtUsername.Size = new Size(300, 72);

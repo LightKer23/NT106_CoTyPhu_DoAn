@@ -1,4 +1,14 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+﻿using Server.Infrastructure.Network;
 using System;
-Console.WriteLine("Hello, World!");
+using System.Threading.Tasks;
+
+internal class Program
+{
+    static async Task Main(string[] args)
+    {
+
+        var server = new TcpServer(7777);
+
+        await server.StartAsync();
+    }
+}

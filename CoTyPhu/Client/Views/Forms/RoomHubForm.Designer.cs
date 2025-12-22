@@ -45,7 +45,8 @@
             btnCreateRoom.Size = new Size(358, 53);
             btnCreateRoom.TabIndex = 1;
             btnCreateRoom.Text = "Tạo phòng";
-            btnCreateRoom.UseVisualStyleBackColor = false;
+            btnCreateRoom.UseVisualStyleBackColor = true;
+            btnCreateRoom.Click += btnCreateRoom_Click;
             // 
             // lblOr
             // 
@@ -77,7 +78,8 @@
             btnJoinRoom.Size = new Size(358, 52);
             btnJoinRoom.TabIndex = 4;
             btnJoinRoom.Text = "Vào phòng";
-            btnJoinRoom.UseVisualStyleBackColor = false;
+            btnJoinRoom.UseVisualStyleBackColor = true;
+            btnJoinRoom.Click += btnJoinRoom_Click;
             // 
             // RoomHubForm
             // 

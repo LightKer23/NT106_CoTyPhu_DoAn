@@ -51,7 +51,6 @@
             pnlVerifyOTP.Name = "pnlVerifyOTP";
             pnlVerifyOTP.Size = new Size(380, 360);
             pnlVerifyOTP.TabIndex = 1;
-            pnlVerifyOTP.Paint += pnlVerifyOTP_Paint;
             // 
             // btnSetUpPsswrd
             // 
@@ -64,6 +63,7 @@
             btnSetUpPsswrd.TabIndex = 12;
             btnSetUpPsswrd.Text = "Đặt lại mật khẩu";
             btnSetUpPsswrd.UseVisualStyleBackColor = true;
+            btnSetUpPsswrd.Click += btnSetUpPsswrd_Click;
             // 
             // label2
             // 
@@ -74,7 +74,6 @@
             label2.Size = new Size(303, 60);
             label2.TabIndex = 1;
             label2.Text = "Mật khẩu có ít nhất 8 ký tự, bao gồm chữ cái, chữ số, chữ in hoa và các ký hiệu đặc biệt như #, $, !, @";
-            label2.Click += label2_Click;
             // 
             // label1
             // 

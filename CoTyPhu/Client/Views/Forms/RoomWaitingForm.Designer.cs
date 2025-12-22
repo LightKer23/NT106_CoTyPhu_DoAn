@@ -18,7 +18,6 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(RoomWaitingForm));
             lblRoomId = new Label();
             lstPlayers = new ListBox();
-            btnChooseCharacter = new Button();
             btnStart = new Button();
             btnLeave = new Button();
             SuspendLayout();
@@ -64,7 +63,8 @@
             btnStart.Size = new Size(244, 64);
             btnStart.TabIndex = 4;
             btnStart.Text = "Bắt đầu";
-            btnStart.UseVisualStyleBackColor = false;
+            btnStart.UseVisualStyleBackColor = true;
+            btnStart.Click += btnStart_Click;
             // 
             // btnLeave
             // 
@@ -75,7 +75,8 @@
             btnLeave.Size = new Size(228, 64);
             btnLeave.TabIndex = 5;
             btnLeave.Text = "Rời phòng";
-            btnLeave.UseVisualStyleBackColor = false;
+            btnLeave.UseVisualStyleBackColor = true;
+            btnLeave.Click += btnLeave_Click;
             // 
             // RoomWaitingForm
             // 
@@ -85,7 +86,6 @@
             ClientSize = new Size(845, 528);
             Controls.Add(lblRoomId);
             Controls.Add(lstPlayers);
-            Controls.Add(btnChooseCharacter);
             Controls.Add(btnStart);
             Controls.Add(btnLeave);
             Margin = new Padding(5, 5, 5, 5);
@@ -101,7 +101,6 @@
 
         private Label lblRoomId;
         private ListBox lstPlayers;
-        private Button btnChooseCharacter;
         private Button btnStart;
         private Button btnLeave;
     }

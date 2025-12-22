@@ -1,4 +1,6 @@
 ﻿using Common.Constracts;
+using Common.Contracts.Auth;
+using Server.Domain;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,7 +26,6 @@ namespace Server.Infrastructure.Network
         {
             _listener = new TcpListener(IPAddress.Any, port);
 
-            // ✅ KHÔNG để Program đăng ký handler, tự tạo dispatcher ở đây
             _dispatcher = new ServerDispatcher();
         }
 
@@ -44,12 +46,27 @@ namespace Server.Infrastructure.Network
 
             while (!ct.IsCancellationRequested && conn.IsConnected)
             {
+                ServerState.CurrentConnection = conn;
+
                 var req = await conn.ReceiveAsync(ct);
                 if (req == null) break;
 
                 var resp = await _dispatcher.DispatchAsync(req);
+                if (req.Type == MessageType.LoginRequest &&
+                    resp.Type == MessageType.LoginResponse)
+                {
+                    var login = JsonSerializer.Deserialize<LoginResponse>(resp.Payload);
+                    if (login?.Success == true && login.IDAccount != null)
+                    {
+                        ServerState.Sessions[login.IDAccount.Value] = new PlayerSession
+                        {
+                            AccountId = login.IDAccount.Value,
+                            Connection = conn
+                        };
+                    }
+                }
 
-                // ✅ đảm bảo match request/response theo MessageId
+
                 resp.MessageId = req.MessageId;
                 resp.MatchId ??= req.MatchId;
                 resp.PlayerId ??= req.PlayerId;
@@ -57,6 +74,7 @@ namespace Server.Infrastructure.Network
                 await conn.SendAsync(resp, ct);
             }
         }
+
     }
 
     public interface IRequestDispatcher
