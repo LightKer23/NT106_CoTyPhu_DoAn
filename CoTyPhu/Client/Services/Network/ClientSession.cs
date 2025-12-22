@@ -13,7 +13,7 @@ namespace Client.Services.Network
         public static int AccountID { get; set; }
 
 
-        public static int PlayerID { get; set; }   // 0,1,2,3
+        public static int PlayerID { get; set; }  
         public static int MatchID { get; set; }
 
 

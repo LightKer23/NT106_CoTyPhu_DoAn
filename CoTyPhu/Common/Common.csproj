@@ -9,19 +9,22 @@
   <ItemGroup>
     <Compile Remove="Contracts\Persistence\**" />
     <Compile Remove="Contracts\Services\**" />
+    <Compile Remove="Domain\Chat\**" />
+    <Compile Remove="Domain\Room\**" />
+    <Compile Remove="Domain\User\**" />
     <Compile Remove="Messaging\**" />
     <EmbeddedResource Remove="Contracts\Persistence\**" />
     <EmbeddedResource Remove="Contracts\Services\**" />
+    <EmbeddedResource Remove="Domain\Chat\**" />
+    <EmbeddedResource Remove="Domain\Room\**" />
+    <EmbeddedResource Remove="Domain\User\**" />
     <EmbeddedResource Remove="Messaging\**" />
     <None Remove="Contracts\Persistence\**" />
     <None Remove="Contracts\Services\**" />
+    <None Remove="Domain\Chat\**" />
+    <None Remove="Domain\Room\**" />
+    <None Remove="Domain\User\**" />
     <None Remove="Messaging\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Domain\Chat\" />
-    <Folder Include="Domain\User\" />
-    <Folder Include="Domain\Room\" />
   </ItemGroup>
 
 </Project>

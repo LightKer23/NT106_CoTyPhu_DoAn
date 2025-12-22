@@ -9,12 +9,18 @@ using Server.Domain.GameState;
 using Server.Infrastructure.Database.Connection;
 using Server.Infrastructure.Database.Repository;
 using System;
+
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Net;
+using System.Net.Mail;
+using System.Configuration;
+
 
 namespace Server.Infrastructure.Network
 {
@@ -42,7 +48,7 @@ namespace Server.Infrastructure.Network
             {
                 MessageType.LoginRequest => Task.FromResult(HandleLogin(req)),
                 MessageType.RegisterRequest => Task.FromResult(HandleRegister(req)),
-                MessageType.ForgotPasswordRequest => Task.FromResult(HandleForgotPassword(req)),
+                MessageType.ForgotPasswordRequest => HandleForgotPassword(req),
                 MessageType.VerifyOTPRequest => Task.FromResult(HandleVerifyOtp(req)),
                 MessageType.ResetPasswordRequest => Task.FromResult(HandleResetPassword(req)),
 
@@ -104,17 +110,39 @@ namespace Server.Infrastructure.Network
                 });
         }
 
-        private MessageEnvelope HandleForgotPassword(MessageEnvelope req)
+        private Task<MessageEnvelope> HandleForgotPassword(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<ForgotPasswordRequest>(req.Payload, JsonOpt)!;
             if (!_accountRepo.CheckEmail(body.Email))
-                return Wrap(MessageType.ForgotPasswordResponse,
-                    new ForgotPasswordResponse { Success = false });
+            {
+                return Task.FromResult(
+                    Wrap(MessageType.ForgotPasswordResponse,
+                        new ForgotPasswordResponse { Success = false, Message = "Email không tồn tại" })
+                );
+            }
 
-            GenerateOtp(body.Email);
-            return Wrap(MessageType.ForgotPasswordResponse,
-                new ForgotPasswordResponse { Success = true });
+            string otp = GenerateOtp(body.Email);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await SendOtpMailAsync(body.Email, otp);
+                    Console.WriteLine($"[MAIL] Sent OTP to {body.Email}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("[MAIL ERROR] " + ex.Message);
+                }
+            });
+
+            return Task.FromResult(
+                Wrap(MessageType.ForgotPasswordResponse,
+                    new ForgotPasswordResponse { Success = true, Message = "OTP đang được gửi về email" })
+            );
         }
+
+
 
         private MessageEnvelope HandleVerifyOtp(MessageEnvelope req)
         {
@@ -323,6 +351,41 @@ namespace Server.Infrastructure.Network
             _otp[email] = (new Random().Next(100000, 999999).ToString(),
                 DateTime.UtcNow.AddMinutes(2), false);
         }
+
+        private static async Task SendOtpMailAsync(string toEmail, string otp)
+        {
+            string host = ConfigurationManager.AppSettings["SMTP_HOST"];
+            int port = int.Parse(ConfigurationManager.AppSettings["SMTP_PORT"]);
+            string fromEmail = ConfigurationManager.AppSettings["SMTP_EMAIL"];
+            string password = ConfigurationManager.AppSettings["SMTP_PASSWORD"];
+
+            using var smtp = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(fromEmail, password),
+                EnableSsl = true,
+                Timeout = 10_000 // 10 giây
+            };
+
+            var mail = new MailMessage
+            {
+                From = new MailAddress(fromEmail, "Monopoly Game"),
+                Subject = "Mã OTP đặt lại mật khẩu",
+                Body = $@"Xin chào,
+Mã OTP của bạn là: {otp}
+
+Mã có hiệu lực trong 2 phút.
+Vui lòng không chia sẻ mã này.
+
+Monopoly Server",
+                IsBodyHtml = false
+            };
+
+            mail.To.Add(toEmail);
+
+            await smtp.SendMailAsync(mail);
+        }
+
+
 
         private static bool VerifyOtp(string email, string input)
         {

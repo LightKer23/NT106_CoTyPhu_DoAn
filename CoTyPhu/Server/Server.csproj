@@ -1,26 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Application\**" />
-    <Compile Remove="Infrastructure\Networking\**" />
-    <Compile Remove="Infrastructure\Persistence\**" />
-    <EmbeddedResource Remove="Application\**" />
-    <EmbeddedResource Remove="Infrastructure\Networking\**" />
-    <EmbeddedResource Remove="Infrastructure\Persistence\**" />
-    <None Remove="Application\**" />
-    <None Remove="Infrastructure\Networking\**" />
-    <None Remove="Infrastructure\Persistence\**" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>
+
+
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
