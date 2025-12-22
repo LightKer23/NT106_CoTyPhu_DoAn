@@ -42,6 +42,7 @@ namespace Common.Constracts
         StartMatchRequest,           // server bắt đầu trận
         StartMatchResponse,             // server kết thúc trận
 
+        RoomUpdatedEvent,
         RoomStateEvent,            // cập nhật danh sách player trong phòng
 
         // ===== GAME ACTION (Client → Server) =====

@@ -8,8 +8,8 @@ using Server.Domain;
 using Server.Domain.GameState;
 using Server.Infrastructure.Database.Connection;
 using Server.Infrastructure.Database.Repository;
+using Server.Infrastructure.Network;
 using System;
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,10 +17,6 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Net;
-using System.Net.Mail;
-using System.Configuration;
-
 
 namespace Server.Infrastructure.Network
 {
@@ -33,12 +29,18 @@ namespace Server.Infrastructure.Network
 
         private readonly AccountRepo _accountRepo;
         private readonly MatchRepo _matchRepo;
+        private readonly PlayerRepo _playerRepo;
+
+
+        // 🔥 AccountId → Connection (KHÔNG PHẢI Domain)
+        private static readonly Dictionary<int, ClientConnection> _connections = new();
 
         public ServerDispatcher()
         {
             var db = new DBConnection();
             _accountRepo = new AccountRepo(db);
             _matchRepo = new MatchRepo(db);
+            _playerRepo = new PlayerRepo(db);
         }
 
         // ================== DISPATCH ==================
@@ -48,7 +50,7 @@ namespace Server.Infrastructure.Network
             {
                 MessageType.LoginRequest => Task.FromResult(HandleLogin(req)),
                 MessageType.RegisterRequest => Task.FromResult(HandleRegister(req)),
-                MessageType.ForgotPasswordRequest => HandleForgotPassword(req),
+                MessageType.ForgotPasswordRequest => Task.FromResult(HandleForgotPassword(req)),
                 MessageType.VerifyOTPRequest => Task.FromResult(HandleVerifyOtp(req)),
                 MessageType.ResetPasswordRequest => Task.FromResult(HandleResetPassword(req)),
 
@@ -70,6 +72,11 @@ namespace Server.Infrastructure.Network
 
             bool ok = _accountRepo.CheckLogin(body.Username, hash);
             int? id = ok ? _accountRepo.GetIdByLogin(body.Username, hash) : null;
+
+            if (ok && id != null)
+            {
+                _connections[id.Value] = ServerState.CurrentConnection!;
+            }
 
             return Wrap(
                 MessageType.LoginResponse,
@@ -110,39 +117,17 @@ namespace Server.Infrastructure.Network
                 });
         }
 
-        private Task<MessageEnvelope> HandleForgotPassword(MessageEnvelope req)
+        private MessageEnvelope HandleForgotPassword(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<ForgotPasswordRequest>(req.Payload, JsonOpt)!;
             if (!_accountRepo.CheckEmail(body.Email))
-            {
-                return Task.FromResult(
-                    Wrap(MessageType.ForgotPasswordResponse,
-                        new ForgotPasswordResponse { Success = false, Message = "Email không tồn tại" })
-                );
-            }
+                return Wrap(MessageType.ForgotPasswordResponse,
+                    new ForgotPasswordResponse { Success = false });
 
-            string otp = GenerateOtp(body.Email);
-
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await SendOtpMailAsync(body.Email, otp);
-                    Console.WriteLine($"[MAIL] Sent OTP to {body.Email}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("[MAIL ERROR] " + ex.Message);
-                }
-            });
-
-            return Task.FromResult(
-                Wrap(MessageType.ForgotPasswordResponse,
-                    new ForgotPasswordResponse { Success = true, Message = "OTP đang được gửi về email" })
-            );
+            GenerateOtp(body.Email);
+            return Wrap(MessageType.ForgotPasswordResponse,
+                new ForgotPasswordResponse { Success = true });
         }
-
-
 
         private MessageEnvelope HandleVerifyOtp(MessageEnvelope req)
         {
@@ -168,47 +153,33 @@ namespace Server.Infrastructure.Network
         // ================== ROOM ==================
         private MessageEnvelope HandleCreateRoom(MessageEnvelope req)
         {
-            var body = JsonSerializer.Deserialize<CreateRoomRequest>(req.Payload, JsonOpt)!;
-
-            // 1️⃣ SQL sinh RoomID
-            int matchId = _matchRepo.CreateMatch();
+            int matchId = _matchRepo.CreateMatch(); //SQL
             if (matchId <= 0)
-                return MakeError("Create match failed");
+                return MakeError("Create room failed");
 
-            // 2️⃣ Tạo MatchState trong RAM
-            var match = new MatchState
+            ServerState.Matches[matchId] = new MatchState
             {
                 MatchId = matchId,
                 IsMatch = 0,
-                CurrentTurnPlayerId = 1 // host
+                CurrentTurnPlayerId = 0
             };
 
-            match.Players[1] = new PlayerState
-            {
-                PlayerId = 1,
-                AccountId = body.AccountID
-            };
-
-            ServerState.Matches[matchId] = match;
-
-            // 3️⃣ Trả về client
             return Wrap(
                 MessageType.CreateRoomResponse,
-                new CreateRoomResponse
-                {
-                    Success = true,
-                    RoomID = matchId
-                },
+                new CreateRoomResponse { Success = true, RoomID = matchId },
                 matchId,
-                1);
+                null
+            );
         }
 
         private MessageEnvelope HandleSearchRoom(MessageEnvelope req)
         {
             if (req.MatchId == null ||
                 !ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+            {
                 return Wrap(MessageType.SearchRoomResponse,
                     new SearchRoomResponse { Success = false });
+            }
 
             return Wrap(
                 MessageType.SearchRoomResponse,
@@ -218,28 +189,44 @@ namespace Server.Infrastructure.Network
                     RoomId = match.MatchId,
                     PlayerRooms = match.Players.Values
                         .Select(p => p.CharacterIndex)
+                        .Where(c => c > 0)
+                        .ToList(),
+                    Players = match.Players.Values
+                        .OrderBy(p => p.PlayerId)
+                        .Select(p => new RoomPlayerInfo
+                        {
+                            PlayerId = p.PlayerId,
+                            CharacterIndex = p.CharacterIndex
+                        })
                         .ToList()
                 },
                 match.MatchId,
-                null);
+                null
+            );
         }
 
         private MessageEnvelope HandleJoinRoom(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<JoinRoomRequest>(req.Payload, JsonOpt)!;
 
-            if (!ServerState.Matches.TryGetValue(body.RoomID, out var match) ||
-                match.IsMatch != 0)
-                return Wrap(MessageType.JoinRoomResponse,
-                    new JoinRoomResponse { Success = false });
+            if (!ServerState.Matches.TryGetValue(body.RoomID, out var match))
+                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
+            if (match.IsMatch != 0)
+                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
+
+            // ❌ check trong RAM, KHÔNG query SQL
+            if (match.Players.Values.Any(p => p.CharacterIndex == body.CharacterIndex))
+                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
+
+            // ✅ SLOT 1–4
             int slot = Enumerable.Range(1, 4)
                 .FirstOrDefault(i => !match.Players.ContainsKey(i));
 
             if (slot == 0)
-                return Wrap(MessageType.JoinRoomResponse,
-                    new JoinRoomResponse { Success = false });
+                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
+            // ✅ ADD RAM
             match.Players[slot] = new PlayerState
             {
                 PlayerId = slot,
@@ -247,64 +234,112 @@ namespace Server.Infrastructure.Network
                 CharacterIndex = body.CharacterIndex
             };
 
-            _matchRepo.IncreasePlayerCount(match.MatchId);
+            // ✅ SQL CHỈ ĐỂ GHI NHẬT KÝ
+            _playerRepo.InsertPlayer(body.RoomID, body.AccountID, body.CharacterIndex);
+            _matchRepo.IncreasePlayerCount(body.RoomID);
+
+            if (match.CurrentTurnPlayerId == 0)
+                match.CurrentTurnPlayerId = 1;
+
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.RoomUpdatedEvent,
+                    new RoomUpdatedEvent { RoomId = match.MatchId },
+                    match.MatchId,
+                    null
+                )
+            );
 
             return Wrap(
                 MessageType.JoinRoomResponse,
-                new JoinRoomResponse { Success = true },
+                new JoinRoomResponse { Success = true, IDPlayer = slot },
                 match.MatchId,
-                slot);
+                slot
+            );
         }
+
 
         private MessageEnvelope HandleLeaveRoom(MessageEnvelope req)
         {
-            if (req.MatchId == null || req.PlayerId == null)
-                return MakeError("Invalid leave");
+            int matchId = req.MatchId!.Value;
+            int playerId = req.PlayerId!.Value; // 1–4
 
-            var match = ServerState.Matches[req.MatchId.Value];
-            int leaving = req.PlayerId.Value;
+            var match = ServerState.Matches[matchId];
 
-            match.Players.Remove(leaving);
-            _matchRepo.DecreasePlayerCount(match.MatchId);
+            // ✅ RAM
+            match.Players.Remove(playerId);
+
+            // ✅ SQL chỉ sync
+            _playerRepo.DeletePlayer(matchId, req.PlayerId.Value);
+            _matchRepo.DecreasePlayerCount(matchId);
 
             if (match.Players.Count == 0)
             {
-                _matchRepo.EndMatch(match.MatchId);
-                ServerState.Matches.Remove(match.MatchId);
-                return MakeError("Room closed");
+                _matchRepo.EndMatch(matchId);
+                ServerState.Matches.Remove(matchId);
             }
-
-            if (match.CurrentTurnPlayerId == leaving)
-                match.CurrentTurnPlayerId = match.Players.Keys.Min();
+            else
+            {
+                BroadcastRoom(
+                    matchId,
+                    Wrap(MessageType.RoomUpdatedEvent,
+                        new RoomUpdatedEvent { RoomId = matchId },
+                        matchId,
+                        null)
+                );
+            }
 
             return Wrap(
                 MessageType.PlayerLeftEvent,
-                new PlayerLeftEvent { PlayerId = leaving },
-                match.MatchId,
-                null);
+                new PlayerLeftEvent { PlayerId = playerId },
+                matchId,
+                null
+            );
         }
+
+
 
         private MessageEnvelope HandleStartMatch(MessageEnvelope req)
         {
             if (req.MatchId == null || req.PlayerId == null)
                 return MakeError("Invalid start");
 
-            var match = ServerState.Matches[req.MatchId.Value];
-
-            // chỉ host (slot 1) được start
             if (req.PlayerId != 1)
                 return MakeError("Only host can start");
 
+            var match = ServerState.Matches[req.MatchId.Value];
             match.IsMatch = 1;
             match.CurrentTurnPlayerId = match.Players.Keys.Min();
-
             _matchRepo.StartMatch(match.MatchId);
+
+            BroadcastRoom(match.MatchId,
+                Wrap(MessageType.StartMatchResponse,
+                    new { Success = true },
+                    match.MatchId,
+                    null));
 
             return Wrap(
                 MessageType.StartMatchResponse,
                 new { Success = true },
                 match.MatchId,
-                null);
+                null
+            );
+        }
+
+        // ================== BROADCAST ==================
+        private void BroadcastRoom(int matchId, MessageEnvelope env)
+        {
+            if (!ServerState.Matches.TryGetValue(matchId, out var match))
+                return;
+
+            foreach (var p in match.Players.Values)
+            {
+                if (_connections.TryGetValue(p.AccountId, out var conn))
+                {
+                    _ = conn.SendAsync(env);
+                }
+            }
         }
 
         // ================== HELPERS ==================
@@ -315,6 +350,7 @@ namespace Server.Infrastructure.Network
             int? playerId = null)
             => new MessageEnvelope
             {
+                MessageId = Guid.NewGuid(),
                 Type = type,
                 MatchId = matchId,
                 PlayerId = playerId,
@@ -324,6 +360,7 @@ namespace Server.Infrastructure.Network
         private static MessageEnvelope MakeError(string msg)
             => new MessageEnvelope
             {
+                MessageId = Guid.NewGuid(),
                 Type = MessageType.ErrorResponse,
                 Payload = $"{{\"message\":\"{msg}\"}}"
             };
@@ -344,48 +381,13 @@ namespace Server.Infrastructure.Network
                    .Select(b => b.ToString("x2")));
         }
 
-        private static readonly System.Collections.Generic.Dictionary<string, (string otp, DateTime exp, bool verified)> _otp = new();
+        private static readonly Dictionary<string, (string otp, DateTime exp, bool verified)> _otp = new();
 
         private static void GenerateOtp(string email)
         {
             _otp[email] = (new Random().Next(100000, 999999).ToString(),
                 DateTime.UtcNow.AddMinutes(2), false);
         }
-
-        private static async Task SendOtpMailAsync(string toEmail, string otp)
-        {
-            string host = ConfigurationManager.AppSettings["SMTP_HOST"];
-            int port = int.Parse(ConfigurationManager.AppSettings["SMTP_PORT"]);
-            string fromEmail = ConfigurationManager.AppSettings["SMTP_EMAIL"];
-            string password = ConfigurationManager.AppSettings["SMTP_PASSWORD"];
-
-            using var smtp = new SmtpClient(host, port)
-            {
-                Credentials = new NetworkCredential(fromEmail, password),
-                EnableSsl = true,
-                Timeout = 10_000 // 10 giây
-            };
-
-            var mail = new MailMessage
-            {
-                From = new MailAddress(fromEmail, "Monopoly Game"),
-                Subject = "Mã OTP đặt lại mật khẩu",
-                Body = $@"Xin chào,
-Mã OTP của bạn là: {otp}
-
-Mã có hiệu lực trong 2 phút.
-Vui lòng không chia sẻ mã này.
-
-Monopoly Server",
-                IsBodyHtml = false
-            };
-
-            mail.To.Add(toEmail);
-
-            await smtp.SendMailAsync(mail);
-        }
-
-
 
         private static bool VerifyOtp(string email, string input)
         {
@@ -397,3 +399,7 @@ Monopoly Server",
         }
     }
 }
+
+
+/*
+using Common.Constracts; using Common.Constracts.Room; using Common.Contracts.Auth; using Common.Contracts.Game; using Common.Contracts.Room; using Common.Domain.Models.Entities; using Server.Domain; using Server.Domain.GameState; using Server.Infrastructure.Database.Connection; using Server.Infrastructure.Database.Repository; using Server.Infrastructure.Network; using System; using System.Collections.Generic; using System.Linq; using System.Security.Cryptography; using System.Text; using System.Text.Json; using System.Text.RegularExpressions; using System.Threading.Tasks; namespace Server.Infrastructure.Network { public sealed class ServerDispatcher : IRequestDispatcher { private static readonly JsonSerializerOptions JsonOpt = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }; private readonly AccountRepo _accountRepo; private readonly MatchRepo _matchRepo; // 🔥 AccountId → Connection (KHÔNG PHẢI Domain) private static readonly Dictionary<int, ClientConnection> _connections = new(); public ServerDispatcher() { var db = new DBConnection(); _accountRepo = new AccountRepo(db); _matchRepo = new MatchRepo(db); } // ================== DISPATCH ================== public Task<MessageEnvelope> DispatchAsync(MessageEnvelope req) { return req.Type switch { MessageType.LoginRequest => Task.FromResult(HandleLogin(req)), MessageType.RegisterRequest => Task.FromResult(HandleRegister(req)), MessageType.ForgotPasswordRequest => Task.FromResult(HandleForgotPassword(req)), MessageType.VerifyOTPRequest => Task.FromResult(HandleVerifyOtp(req)), MessageType.ResetPasswordRequest => Task.FromResult(HandleResetPassword(req)), MessageType.CreateRoomRequest => Task.FromResult(HandleCreateRoom(req)), MessageType.SearchRoomRequest => Task.FromResult(HandleSearchRoom(req)), MessageType.JoinRoomRequest => Task.FromResult(HandleJoinRoom(req)), MessageType.LeaveMatchRequest => Task.FromResult(HandleLeaveRoom(req)), MessageType.StartMatchRequest => Task.FromResult(HandleStartMatch(req)), _ => Task.FromResult(MakeError("No handler for message type")) }; } // ================== AUTH ================== private MessageEnvelope HandleLogin(MessageEnvelope req) { var body = JsonSerializer.Deserialize<LoginRequest>(req.Payload, JsonOpt)!; string hash = NormalizeToSha256Hex(body.Password); bool ok = _accountRepo.CheckLogin(body.Username, hash); int? id = ok ? _accountRepo.GetIdByLogin(body.Username, hash) : null; if (ok && id != null) { _connections[id.Value] = ServerState.CurrentConnection!; } return Wrap( MessageType.LoginResponse, new LoginResponse { Success = ok, Message = ok ? "Đăng nhập thành công" : "Sai tài khoản hoặc mật khẩu", IDAccount = id }); } private MessageEnvelope HandleRegister(MessageEnvelope req) { var body = JsonSerializer.Deserialize<RegisterRequest>(req.Payload, JsonOpt)!; if (_accountRepo.CheckUsername(body.Username)) return Wrap(MessageType.RegisterResponse, new RegisterResponse { Success = false, Message = "Username đã tồn tại" }); if (_accountRepo.CheckEmail(body.Email)) return Wrap(MessageType.RegisterResponse, new RegisterResponse { Success = false, Message = "Email đã tồn tại" }); int id = _accountRepo.Insert(new Account { Username = body.Username, PasswordHash = NormalizeToSha256Hex(body.Password), Email = body.Email, DisplayName = body.DisplayName }); return Wrap( MessageType.RegisterResponse, new RegisterResponse { Success = id > 0, Message = id > 0 ? "Đăng ký thành công" : "Đăng ký thất bại" }); } private MessageEnvelope HandleForgotPassword(MessageEnvelope req) { var body = JsonSerializer.Deserialize<ForgotPasswordRequest>(req.Payload, JsonOpt)!; if (!_accountRepo.CheckEmail(body.Email)) return Wrap(MessageType.ForgotPasswordResponse, new ForgotPasswordResponse { Success = false }); GenerateOtp(body.Email); return Wrap(MessageType.ForgotPasswordResponse, new ForgotPasswordResponse { Success = true }); } private MessageEnvelope HandleVerifyOtp(MessageEnvelope req) { var body = JsonSerializer.Deserialize<VerifyOTPRequest>(req.Payload, JsonOpt)!; return Wrap( MessageType.VerifyOTPResponse, new VerifyOTPResponse { Success = VerifyOtp(body.Email, body.OTP) }); } private MessageEnvelope HandleResetPassword(MessageEnvelope req) { var body = JsonSerializer.Deserialize<ResetPasswordRequest>(req.Payload, JsonOpt)!; bool ok = _accountRepo.ChangePasswordByEmail( body.Email, NormalizeToSha256Hex(body.NewPassword)); return Wrap( MessageType.ResetPasswordResponse, new ResetPasswordResponse { Success = ok }); } // ================== ROOM ================== private MessageEnvelope HandleCreateRoom(MessageEnvelope req) { int matchId = _matchRepo.CreateMatch(); if (matchId <= 0) return MakeError("Create room failed"); ServerState.Matches[matchId] = new MatchState { MatchId = matchId, IsMatch = 0, CurrentTurnPlayerId = 0 }; return Wrap( MessageType.CreateRoomResponse, new CreateRoomResponse { Success = true, RoomID = matchId }, matchId, null ); } private MessageEnvelope HandleSearchRoom(MessageEnvelope req) { if (req.MatchId == null || !ServerState.Matches.TryGetValue(req.MatchId.Value, out var match)) { return Wrap(MessageType.SearchRoomResponse, new SearchRoomResponse { Success = false }); } return Wrap( MessageType.SearchRoomResponse, new SearchRoomResponse { Success = true, RoomId = match.MatchId, PlayerRooms = match.Players.Values .Select(p => p.CharacterIndex) .Where(c => c > 0) .ToList(), Players = match.Players.Values .OrderBy(p => p.PlayerId) .Select(p => new RoomPlayerInfo { PlayerId = p.PlayerId, CharacterIndex = p.CharacterIndex }) .ToList() }, match.MatchId, null ); } private MessageEnvelope HandleJoinRoom(MessageEnvelope req) { var body = JsonSerializer.Deserialize<JoinRoomRequest>(req.Payload, JsonOpt)!; if (!ServerState.Matches.TryGetValue(body.RoomID, out var match)) return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false }); if (match.IsMatch != 0) return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false }); if (match.Players.Values.Any(p => p.CharacterIndex == body.CharacterIndex)) return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false }); int slot = Enumerable.Range(1, 4) .FirstOrDefault(i => !match.Players.ContainsKey(i)); if (slot == 0) return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false }); match.Players[slot] = new PlayerState { PlayerId = slot, AccountId = body.AccountID, CharacterIndex = body.CharacterIndex }; _matchRepo.IncreasePlayerCount(match.MatchId); if (match.CurrentTurnPlayerId == 0) match.CurrentTurnPlayerId = match.Players.Keys.Min(); // 🔥 BROADCAST THEO CONNECTION THỰC BroadcastRoom(match.MatchId, Wrap(MessageType.RoomUpdatedEvent, new RoomUpdatedEvent { RoomId = match.MatchId }, match.MatchId, null)); return Wrap( MessageType.JoinRoomResponse, new JoinRoomResponse { Success = true, IDPlayer = slot }, match.MatchId, slot ); } private MessageEnvelope HandleLeaveRoom(MessageEnvelope req) { int matchId = req.MatchId!.Value; int playerId = req.PlayerId!.Value; var match = ServerState.Matches[matchId]; match.Players.Remove(playerId); _matchRepo.DecreasePlayerCount(matchId); bool roomClosed = match.Players.Count == 0; if (roomClosed) { _matchRepo.EndMatch(matchId); ServerState.Matches.Remove(matchId); } else { BroadcastRoom( matchId, Wrap( MessageType.RoomUpdatedEvent, new RoomUpdatedEvent { RoomId = matchId }, matchId, null ) ); } return Wrap( MessageType.PlayerLeftEvent, new PlayerLeftEvent { PlayerId = playerId, }, matchId, null ); } private MessageEnvelope HandleStartMatch(MessageEnvelope req) { if (req.MatchId == null || req.PlayerId == null) return MakeError("Invalid start"); if (req.PlayerId != 1) return MakeError("Only host can start"); var match = ServerState.Matches[req.MatchId.Value]; match.IsMatch = 1; match.CurrentTurnPlayerId = match.Players.Keys.Min(); _matchRepo.StartMatch(match.MatchId); BroadcastRoom(match.MatchId, Wrap(MessageType.StartMatchResponse, new { Success = true }, match.MatchId, null)); return Wrap( MessageType.StartMatchResponse, new { Success = true }, match.MatchId, null ); } // ================== BROADCAST ================== private void BroadcastRoom(int matchId, MessageEnvelope env) { if (!ServerState.Matches.TryGetValue(matchId, out var match)) return; foreach (var p in match.Players.Values) { if (_connections.TryGetValue(p.AccountId, out var conn)) { _ = conn.SendAsync(env); } } } // ================== HELPERS ================== private static MessageEnvelope Wrap<T>( MessageType type, T body, int? matchId = null, int? playerId = null) => new MessageEnvelope { MessageId = Guid.NewGuid(), Type = type, MatchId = matchId, PlayerId = playerId, Payload = JsonSerializer.Serialize(body, JsonOpt) }; private static MessageEnvelope MakeError(string msg) => new MessageEnvelope { MessageId = Guid.NewGuid(), Type = MessageType.ErrorResponse, Payload = $"{{\"message\":\"{msg}\"}}" }; // ================== OTP + HASH ================== private static string NormalizeToSha256Hex(string input) => IsHexSha256(input) ? input.ToLowerInvariant() : Sha256Hex(input); private static bool IsHexSha256(string s) => !string.IsNullOrEmpty(s) && s.Length == 64 && Regex.IsMatch(s, "^[0-9a-fA-F]{64}$"); private static string Sha256Hex(string raw) { using var sha = SHA256.Create(); return string.Concat( sha.ComputeHash(Encoding.UTF8.GetBytes(raw)) .Select(b => b.ToString("x2"))); } private static readonly Dictionary<string, (string otp, DateTime exp, bool verified)> _otp = new(); private static void GenerateOtp(string email) { _otp[email] = (new Random().Next(100000, 999999).ToString(), DateTime.UtcNow.AddMinutes(2), false); } private static bool VerifyOtp(string email, string input) { if (!_otp.TryGetValue(email, out var s)) return false; if (s.exp < DateTime.UtcNow) return false; if (s.otp != input) return false; _otp[email] = (s.otp, s.exp, true); return true; } } }*/
