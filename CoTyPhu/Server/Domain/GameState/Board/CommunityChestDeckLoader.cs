@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Common.Domain.Game.Enums;
 
-namespace Server.Domain.Board
+namespace Server.Domain.GameState.Board
 {
     public static class CommunityChestDeckLoader
     {
