@@ -32,5 +32,12 @@ namespace Server.Domain.GameState
 
         //Index ô Server đợi người chơi quyết định mua hay không
         public int? PendingTileIndex { get; set; }
+
+        public MatchState(int matchId, Dictionary<int, PlayerState> players, Dictionary<int, PropertyState> properties)
+        {
+            MatchId = matchId;
+            this.Players = players;
+            this.Properties = properties;
+        }
     }
 }

@@ -10,6 +10,8 @@ namespace Server.Domain.GameState
     {
         public int PlayerId { get; set; }
 
+        //Chọn nhân vật
+        public int CharacterIndex { get; set; }
         // vị trí trên bàn cờ
         public int Position { get; set; } = 0;
 

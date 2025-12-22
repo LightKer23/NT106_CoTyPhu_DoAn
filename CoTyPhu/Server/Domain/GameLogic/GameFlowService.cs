@@ -3,6 +3,7 @@ using Server.Domain.GameState;
 using System.Text.Json;
 using Common.Domain.Game.Enums;
 using System.Linq;
+using Common.Contracts.Game;
 
 namespace Server.Domain.GameLogic
 {
@@ -78,6 +79,12 @@ namespace Server.Domain.GameLogic
                 return RentPrice;
         }
 
+        //Cộng / Trừ tiền
+        private void ChangeMoney(PlayerState player, int amount)
+        {
+            player.Money += amount;
+        }
+
         //Trả tiền thuê
         private void PayRent(MatchState match, PlayerState player, Tile tile)
         {
@@ -136,5 +143,47 @@ namespace Server.Domain.GameLogic
 
             return TileType.Property;
         }
+
+        //Kiểm tra phá sản
+        private void CheckBankrupt(PlayerState player)
+        {
+            if (player.Money < 0)
+            {
+                player.IsBankrupt = true;
+                player.Money = 0;
+            }
+        }
+
+        //Chuyển lượt
+        public void NextTurn(MatchState match)
+        {
+            int totalPlayers = match.Players.Count;
+
+            do
+            {
+                match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
+            }
+            while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
+        }
+
+        //Gửi Event di chuyển
+        public MessageEnvelope SendPlayerMovedEvent(int matchId, int playerId, int newPos)
+        {
+            var movedEvent = new PlayerMovedEvent()
+            {
+                MatchId = matchId,
+                PlayerId = playerId,
+                NewPosition = newPos
+            };
+
+            return Wrap(MessageType.PlayerMovedEvent, movedEvent);
+        }
+
+        private static MessageEnvelope Wrap<T>(MessageType type, T body)
+        => new MessageEnvelope
+        {
+            Type = type,
+            Payload = JsonSerializer.Serialize(body, JsonOpt)
+        };
     }
 }

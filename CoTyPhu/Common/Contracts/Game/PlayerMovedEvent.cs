@@ -8,6 +8,7 @@ namespace Common.Contracts.Game
 {
     public class PlayerMovedEvent
     {
+        public int MatchId { get; set; }
         public int PlayerId { get; set; }
         public int NewPosition { get; set; }
     }
