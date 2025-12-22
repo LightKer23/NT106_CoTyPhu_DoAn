@@ -9,11 +9,6 @@ namespace Server.Domain.GameLogic
 {
     public class GameFlowService
     {
-        private static readonly JsonSerializerOptions JsonOpt = new()
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
         //Lấy vị trí ô đất hiện tại của người chơi
         public int GetCurrentTileIndex(PlayerState player)
         {
@@ -21,10 +16,7 @@ namespace Server.Domain.GameLogic
         }
 
         //Xử lý ô đất
-        private TileType HandleProperty(
-            MatchState match,
-            PlayerState player,
-            Tile tile)
+        public TileType HandleProperty(MatchState match, PlayerState player, Tile tile)
         {
 
             if (tile is PropertyTile pTile)
@@ -124,6 +116,20 @@ namespace Server.Domain.GameLogic
                 return RentPrice;
         }
 
+        //Tính tiền thuê Công ty (trường hợp lá Cơ hội đến công ty gần nhất)
+        private int getUtilityRentPrice(PlayerState player, Tile tile)
+        {
+            int RentPrice = 0;
+            if (tile is UtilityTile uTile)
+            {
+                DiceService diceService = new DiceService();
+                (int total, bool isDouble) result = diceService.RollDice();
+                int RollResult = result.total;
+                RentPrice = RollResult * 10;
+            }
+            return RentPrice;
+        }
+
         //Cộng tiền
         public void AddMoney(PlayerState player, int amount)
         {
@@ -140,7 +146,7 @@ namespace Server.Domain.GameLogic
         {
             int rentPrice = getRentPrice(player, tile);
 
-            DeductMoney(player, rentPrice)
+            DeductMoney(player, rentPrice);
 
             if (tile is PropertyTile pTile)
             {
@@ -157,9 +163,33 @@ namespace Server.Domain.GameLogic
                 var owner = match.Players[uTile.PlayerOwnerId.Value];
                 AddMoney(owner, rentPrice);
             }
-            
-
         }
+
+        // Trả tiền thuê có hệ số (Cơ hội, Khí vận)
+        public void PayRent(MatchState match, PlayerState player, Tile tile, int multiplier)
+        {
+            int rentPrice = getRentPrice(player, tile) * multiplier;
+
+            DeductMoney(player, rentPrice);
+
+            if (tile is PropertyTile pTile)
+            {
+                var owner = match.Players[pTile.PlayerOwnerId.Value];
+                AddMoney(owner, rentPrice);
+            }
+            else if (tile is RailRoadTile rrTile)
+            {
+                var owner = match.Players[rrTile.PlayerOwnerId.Value];
+                AddMoney(owner, rentPrice);
+            }
+            else if (tile is UtilityTile uTile)
+            {
+                rentPrice = getUtilityRentPrice(player, tile);
+                var owner = match.Players[uTile.PlayerOwnerId.Value];
+                AddMoney(owner, rentPrice);
+            }
+        }
+
 
         //Kiểm tra phá sản
         public bool CheckBankrupt(PlayerState player)
@@ -209,25 +239,5 @@ namespace Server.Domain.GameLogic
                 match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
             } while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
         }
-
-        //Gửi Event di chuyển
-        public MessageEnvelope SendPlayerMovedEvent(int matchId, int playerId, int newPos)
-        {
-            var movedEvent = new PlayerMovedEvent()
-            {
-                MatchId = matchId,
-                PlayerId = playerId,
-                NewPosition = newPos
-            };
-
-            return Wrap(MessageType.PlayerMovedEvent, movedEvent);
-        }
-
-        private static MessageEnvelope Wrap<T>(MessageType type, T body)
-        => new MessageEnvelope
-        {
-            Type = type,
-            Payload = JsonSerializer.Serialize(body, JsonOpt)
-        };
     }
 }
