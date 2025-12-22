@@ -82,7 +82,6 @@
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Phòng chờ";
-            Load += RoomWaitingForm_Load_1;
             ResumeLayout(false);
             PerformLayout();
         }
