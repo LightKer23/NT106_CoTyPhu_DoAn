@@ -30,9 +30,19 @@ namespace Server.Infrastructure.Network
         private readonly AccountRepo _accountRepo;
         private readonly MatchRepo _matchRepo;
         private readonly PlayerRepo _playerRepo;
+        private static readonly object _locksGuard = new();
+        private static readonly Dictionary<int, object> _matchLocks = new();
 
+        private static object GetMatchLock(int matchId)
+        {
+            lock (_locksGuard)
+            {
+                if (!_matchLocks.TryGetValue(matchId, out var o))
+                    _matchLocks[matchId] = o = new object();
+                return o;
+            }
+        }
 
-        // 🔥 AccountId → Connection (KHÔNG PHẢI Domain)
         private static readonly Dictionary<int, ClientConnection> _connections = new();
 
         public ServerDispatcher()
@@ -43,7 +53,6 @@ namespace Server.Infrastructure.Network
             _playerRepo = new PlayerRepo(db);
         }
 
-        // ================== DISPATCH ==================
         public Task<MessageEnvelope> DispatchAsync(MessageEnvelope req)
         {
             return req.Type switch
@@ -60,11 +69,11 @@ namespace Server.Infrastructure.Network
                 MessageType.LeaveMatchRequest => Task.FromResult(HandleLeaveRoom(req)),
                 MessageType.StartMatchRequest => Task.FromResult(HandleStartMatch(req)),
 
-                _ => Task.FromResult(MakeError("No handler for message type"))
+                _ => Task.FromResult(MakeError("Thông điệp không thể xử lý"))
             };
         }
 
-        // ================== AUTH ==================
+        #region Auth Handlers
         private MessageEnvelope HandleLogin(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<LoginRequest>(req.Payload, JsonOpt)!;
@@ -149,13 +158,14 @@ namespace Server.Infrastructure.Network
                 MessageType.ResetPasswordResponse,
                 new ResetPasswordResponse { Success = ok });
         }
+        #endregion
 
-        // ================== ROOM ==================
+        #region Room Handlers
         private MessageEnvelope HandleCreateRoom(MessageEnvelope req)
         {
-            int matchId = _matchRepo.CreateMatch(); //SQL
+            int matchId = _matchRepo.CreateMatch();
             if (matchId <= 0)
-                return MakeError("Create room failed");
+                return MakeError("Tạo phòng thất bại!");
 
             ServerState.Matches[matchId] = new MatchState
             {
@@ -193,10 +203,15 @@ namespace Server.Infrastructure.Network
                         .ToList(),
                     Players = match.Players.Values
                         .OrderBy(p => p.PlayerId)
-                        .Select(p => new RoomPlayerInfo
+                        .Select(p => 
                         {
-                            PlayerId = p.PlayerId,
-                            CharacterIndex = p.CharacterIndex
+                            var acc = _accountRepo.GetById(p.AccountId);
+                            return new RoomPlayerInfo
+                            {
+                                DisplayName = acc?.Username ?? $"Player {p.PlayerId}",
+                                PlayerId = p.PlayerId,
+                                CharacterIndex = p.CharacterIndex
+                            };
                         })
                         .ToList()
                 },
@@ -212,50 +227,44 @@ namespace Server.Infrastructure.Network
             if (!ServerState.Matches.TryGetValue(body.RoomID, out var match))
                 return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
-            if (match.IsMatch != 0)
-                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
-
-            // ❌ check trong RAM, KHÔNG query SQL
-            if (match.Players.Values.Any(p => p.CharacterIndex == body.CharacterIndex))
-                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
-
-            // ✅ SLOT 1–4
-            int slot = Enumerable.Range(1, 4)
-                .FirstOrDefault(i => !match.Players.ContainsKey(i));
-
-            if (slot == 0)
-                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
-
-            // ✅ ADD RAM
-            match.Players[slot] = new PlayerState
+            lock (GetMatchLock(match.MatchId))
             {
-                PlayerId = slot,
-                AccountId = body.AccountID,
-                CharacterIndex = body.CharacterIndex
-            };
+                if (match.IsMatch != 0)
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
-            // ✅ SQL CHỈ ĐỂ GHI NHẬT KÝ
+                if (match.Players.Values.Any(p => p.CharacterIndex == body.CharacterIndex))
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
+
+                int slot = Enumerable.Range(1, 4).FirstOrDefault(i => !match.Players.ContainsKey(i));
+                if (slot == 0)
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
+
+                match.Players[slot] = new PlayerState
+                {
+                    PlayerId = slot,
+                    AccountId = body.AccountID,
+                    CharacterIndex = body.CharacterIndex
+                };
+
+                _connections[body.AccountID] = ServerState.CurrentConnection!;
+
+                if (match.CurrentTurnPlayerId == 0)
+                    match.CurrentTurnPlayerId = 1;
+            }
+
             _playerRepo.InsertPlayer(body.RoomID, body.AccountID, body.CharacterIndex);
             _matchRepo.IncreasePlayerCount(body.RoomID);
 
-            if (match.CurrentTurnPlayerId == 0)
-                match.CurrentTurnPlayerId = 1;
-
             BroadcastRoom(
                 match.MatchId,
-                Wrap(
-                    MessageType.RoomUpdatedEvent,
-                    new RoomUpdatedEvent { RoomId = match.MatchId },
-                    match.MatchId,
-                    null
-                )
+                Wrap(MessageType.RoomUpdatedEvent, new RoomUpdatedEvent { RoomId = match.MatchId }, match.MatchId, null)
             );
 
             return Wrap(
                 MessageType.JoinRoomResponse,
-                new JoinRoomResponse { Success = true, IDPlayer = slot },
+                new JoinRoomResponse { Success = true, IDPlayer = match.Players.Keys.Max() },
                 match.MatchId,
-                slot
+                null
             );
         }
 
@@ -263,19 +272,16 @@ namespace Server.Infrastructure.Network
         private MessageEnvelope HandleLeaveRoom(MessageEnvelope req)
         {
             int matchId = req.MatchId!.Value;
-            int playerId = req.PlayerId!.Value; // 1–4
+            int playerId = req.PlayerId!.Value;
 
             if (!ServerState.Matches.TryGetValue(matchId, out var match))
-                return MakeError("Match not found");
+                return MakeError("Không tìm thấy trận đấu.");
 
-            // 1️⃣ RAM REMOVE
             match.Players.Remove(playerId);
 
-            // 2️⃣ SQL SYNC
             _playerRepo.DeletePlayer(matchId, playerId);
             _matchRepo.DecreasePlayerCount(matchId);
 
-            // 3️⃣ ROOM EMPTY → DELETE
             if (match.Players.Count == 0)
             {
                 _matchRepo.EndMatch(matchId);
@@ -293,7 +299,6 @@ namespace Server.Infrastructure.Network
                 match.CurrentTurnPlayerId = match.Players.Keys.Min();
             }
 
-            // 5️⃣ BROADCAST UPDATE
             BroadcastRoom(
                 matchId,
                 Wrap(
@@ -311,17 +316,15 @@ namespace Server.Infrastructure.Network
                 null
             );
         }
-
-
-
+        #endregion
 
         private MessageEnvelope HandleStartMatch(MessageEnvelope req)
         {
             if (req.MatchId == null || req.PlayerId == null)
-                return MakeError("Invalid start");
+                return MakeError("Không thể bắt đầu trận đấu!");
 
             if (req.PlayerId != 1)
-                return MakeError("Only host can start");
+                return MakeError("Chỉ có chủ phòng mới có thể bắt đầu trận đấu!");
 
             var match = ServerState.Matches[req.MatchId.Value];
 
@@ -349,7 +352,7 @@ namespace Server.Infrastructure.Network
         }
 
 
-        // ================== BROADCAST ==================
+        #region Broadcast Helpers
         private void BroadcastRoom(int matchId, MessageEnvelope env)
         {
             if (!ServerState.Matches.TryGetValue(matchId, out var match))
@@ -363,8 +366,9 @@ namespace Server.Infrastructure.Network
                 }
             }
         }
+        #endregion
 
-        // ================== HELPERS ==================
+        #region Helpers
         private static MessageEnvelope Wrap<T>(
             MessageType type,
             T body,
@@ -386,8 +390,9 @@ namespace Server.Infrastructure.Network
                 Type = MessageType.ErrorResponse,
                 Payload = $"{{\"message\":\"{msg}\"}}"
             };
+        #endregion
 
-        // ================== OTP + HASH ==================
+        #region OTP and Hash Handlers
         private static string NormalizeToSha256Hex(string input)
             => IsHexSha256(input) ? input.ToLowerInvariant() : Sha256Hex(input);
 
@@ -419,6 +424,7 @@ namespace Server.Infrastructure.Network
             _otp[email] = (s.otp, s.exp, true);
             return true;
         }
+        #endregion
     }
 }
 

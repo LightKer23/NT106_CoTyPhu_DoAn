@@ -26,5 +26,20 @@ namespace Client.Views.Forms
             frm.Show();
 
         }
+
+        private void btnSetting_Click(object sender, EventArgs e)
+        {
+            (new SettingForm()).Show();
+        }
+
+        private void btnGuide_Click(object sender, EventArgs e)
+        {
+            (new HowToPlayForm()).Show();
+        }
+
+        private void btnPlayWithCmp_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("Tính năng đang được phát triển!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 }

@@ -16,7 +16,6 @@ namespace Client.Views.Forms
         {
             try
             {
-                // 🔹 KẾT NỐI 1 LẦN DUY NHẤT
                 await ClientSession.ConnectAsync();
             }
             catch (Exception ex)

@@ -33,7 +33,6 @@ namespace Client.Views.Forms
                 kv.Value.Click += (_, __) => SelectCharacter(charIndex);
             }
 
-            // Hỏi server: phòng này đã chọn những char nào
             var resp = await ClientSession.Tcp.SearchRoomAsync(ClientSession.MatchID);
 
             if (resp.Success)
@@ -41,7 +40,6 @@ namespace Client.Views.Forms
                 DisableTakenCharacters(resp.PlayerRooms);
             }
         }
-
 
         private void DisableTakenCharacters(List<int> takenChars)
         {
@@ -64,8 +62,6 @@ namespace Client.Views.Forms
 
             _charButtons[charIndex].FlatStyle = FlatStyle.Popup;
         }
-
-
 
         private async void btnChoose_Click(object sender, EventArgs e)
         {
