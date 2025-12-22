@@ -61,7 +61,7 @@ namespace Client.Views.Forms
             {
                 if (p.CharacterIndex <= 0) continue;
 
-                lstPlayers.Items.Add($"Player {p.PlayerId} - {_charNames[p.CharacterIndex]}");
+                lstPlayers.Items.Add($"{p.DisplayName} - {_charNames[p.CharacterIndex]}");
             }
 
             btnStart.Enabled = ClientSession.PlayerID == 1;
