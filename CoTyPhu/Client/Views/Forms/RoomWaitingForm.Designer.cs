@@ -38,39 +38,28 @@
             // lstPlayers
             // 
             lstPlayers.Location = new Point(41, 104);
-            lstPlayers.Margin = new Padding(5, 5, 5, 5);
+            lstPlayers.Margin = new Padding(5);
             lstPlayers.Name = "lstPlayers";
             lstPlayers.Size = new Size(761, 260);
             lstPlayers.TabIndex = 2;
             // 
-            // btnChooseCharacter
-            // 
-            btnChooseCharacter.BackColor = Color.Azure;
-            btnChooseCharacter.Location = new Point(41, 416);
-            btnChooseCharacter.Margin = new Padding(5, 5, 5, 5);
-            btnChooseCharacter.Name = "btnChooseCharacter";
-            btnChooseCharacter.Size = new Size(244, 64);
-            btnChooseCharacter.TabIndex = 3;
-            btnChooseCharacter.Text = "Chọn nhân vật";
-            btnChooseCharacter.UseVisualStyleBackColor = false;
-            // 
             // btnStart
             // 
-            btnStart.BackColor = Color.PapayaWhip;
-            btnStart.Location = new Point(312, 416);
-            btnStart.Margin = new Padding(5, 5, 5, 5);
+            btnStart.BackColor = Color.MistyRose;
+            btnStart.Location = new Point(41, 416);
+            btnStart.Margin = new Padding(5);
             btnStart.Name = "btnStart";
             btnStart.Size = new Size(244, 64);
             btnStart.TabIndex = 4;
             btnStart.Text = "Bắt đầu";
-            btnStart.UseVisualStyleBackColor = true;
+            btnStart.UseVisualStyleBackColor = false;
             btnStart.Click += btnStart_Click;
             // 
             // btnLeave
             // 
             btnLeave.BackColor = Color.White;
             btnLeave.Location = new Point(577, 416);
-            btnLeave.Margin = new Padding(5, 5, 5, 5);
+            btnLeave.Margin = new Padding(5);
             btnLeave.Name = "btnLeave";
             btnLeave.Size = new Size(228, 64);
             btnLeave.TabIndex = 5;
@@ -88,17 +77,17 @@
             Controls.Add(lstPlayers);
             Controls.Add(btnStart);
             Controls.Add(btnLeave);
-            Margin = new Padding(5, 5, 5, 5);
+            Margin = new Padding(5);
             Name = "RoomWaitingForm";
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Phòng chờ";
+            Load += RoomWaitingForm_Load_1;
             ResumeLayout(false);
             PerformLayout();
         }
 
         #endregion
-
         private Label lblRoomId;
         private ListBox lstPlayers;
         private Button btnStart;

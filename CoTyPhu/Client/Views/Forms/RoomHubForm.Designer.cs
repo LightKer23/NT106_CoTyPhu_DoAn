@@ -40,7 +40,7 @@
             // 
             btnCreateRoom.BackColor = Color.Azure;
             btnCreateRoom.Location = new Point(244, 128);
-            btnCreateRoom.Margin = new Padding(5, 5, 5, 5);
+            btnCreateRoom.Margin = new Padding(5);
             btnCreateRoom.Name = "btnCreateRoom";
             btnCreateRoom.Size = new Size(358, 53);
             btnCreateRoom.TabIndex = 1;
@@ -63,7 +63,7 @@
             // txtRoomId
             // 
             txtRoomId.Location = new Point(244, 223);
-            txtRoomId.Margin = new Padding(5, 5, 5, 5);
+            txtRoomId.Margin = new Padding(5);
             txtRoomId.Name = "txtRoomId";
             txtRoomId.PlaceholderText = "Nhập Room ID";
             txtRoomId.Size = new Size(355, 39);
@@ -73,7 +73,7 @@
             // 
             btnJoinRoom.BackColor = Color.Azure;
             btnJoinRoom.Location = new Point(241, 281);
-            btnJoinRoom.Margin = new Padding(5, 5, 5, 5);
+            btnJoinRoom.Margin = new Padding(5);
             btnJoinRoom.Name = "btnJoinRoom";
             btnJoinRoom.Size = new Size(358, 52);
             btnJoinRoom.TabIndex = 4;
@@ -86,13 +86,13 @@
             AutoScaleDimensions = new SizeF(13F, 32F);
             AutoScaleMode = AutoScaleMode.Font;
             BackgroundImage = (Image)resources.GetObject("$this.BackgroundImage");
-            ClientSize = new Size(806, 432);
+            ClientSize = new Size(781, 432);
             Controls.Add(lblTitle);
             Controls.Add(btnCreateRoom);
             Controls.Add(lblOr);
             Controls.Add(txtRoomId);
             Controls.Add(btnJoinRoom);
-            Margin = new Padding(5, 5, 5, 5);
+            Margin = new Padding(5);
             Name = "RoomHubForm";
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
