@@ -32,7 +32,7 @@
             pnlVerifyOTP = new Panel();
             label4 = new Label();
             btnVerify = new Button();
-            linkLabel1 = new LinkLabel();
+            lkSendAgain = new LinkLabel();
             label3 = new Label();
             textBox1 = new TextBox();
             label2 = new Label();
@@ -46,7 +46,7 @@
             pnlVerifyOTP.BorderStyle = BorderStyle.FixedSingle;
             pnlVerifyOTP.Controls.Add(label4);
             pnlVerifyOTP.Controls.Add(btnVerify);
-            pnlVerifyOTP.Controls.Add(linkLabel1);
+            pnlVerifyOTP.Controls.Add(lkSendAgain);
             pnlVerifyOTP.Controls.Add(label3);
             pnlVerifyOTP.Controls.Add(textBox1);
             pnlVerifyOTP.Controls.Add(label2);
@@ -79,15 +79,16 @@
             btnVerify.UseVisualStyleBackColor = true;
             btnVerify.Click += btnVerify_Click;
             // 
-            // linkLabel1
+            // lkSendAgain
             // 
-            linkLabel1.AutoSize = true;
-            linkLabel1.Location = new Point(229, 223);
-            linkLabel1.Name = "linkLabel1";
-            linkLabel1.Size = new Size(52, 20);
-            linkLabel1.TabIndex = 4;
-            linkLabel1.TabStop = true;
-            linkLabel1.Text = "Gửi lại";
+            lkSendAgain.AutoSize = true;
+            lkSendAgain.Location = new Point(229, 223);
+            lkSendAgain.Name = "lkSendAgain";
+            lkSendAgain.Size = new Size(52, 20);
+            lkSendAgain.TabIndex = 4;
+            lkSendAgain.TabStop = true;
+            lkSendAgain.Text = "Gửi lại";
+            lkSendAgain.LinkClicked += lkSendAgain_LinkClicked;
             // 
             // label3
             // 
@@ -148,7 +149,7 @@
 
         private Panel pnlVerifyOTP;
         private Button btnVerify;
-        private LinkLabel linkLabel1;
+        private LinkLabel lkSendAgain;
         private Label label3;
         private TextBox textBox1;
         private Label label2;

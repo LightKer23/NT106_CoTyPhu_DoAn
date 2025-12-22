@@ -48,8 +48,6 @@ namespace Client.Views.Forms
                 ClientSession.Tcp.OnEvent -= HandleServerEvent;
         }
 
-
-
         private async Task ReloadPlayers()
         {
             var resp = await ClientSession.Tcp.SearchRoomAsync(ClientSession.MatchID);
@@ -66,7 +64,6 @@ namespace Client.Views.Forms
 
             btnStart.Enabled = ClientSession.PlayerID == 1;
         }
-
 
         private async void btnLeave_Click(object sender, EventArgs e)
         {

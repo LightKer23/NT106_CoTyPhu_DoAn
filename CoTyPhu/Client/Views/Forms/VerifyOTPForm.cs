@@ -13,7 +13,6 @@ namespace Client.Views.Forms
             InitializeComponent();
             _email = email;
 
-            // Hiển thị email (nếu bạn muốn)
             label3.Text = $"Mã xác thực được gửi sang email {_email}";
         }
 
@@ -33,7 +32,6 @@ namespace Client.Views.Forms
             {
                 await ClientSession.ConnectAsync();
 
-                // 🔹 GỌI VERIFY OTP
                 var res = await ClientSession.Tcp.VerifyOTPAsync(_email, otp);
 
                 if (!res.Success)
@@ -44,7 +42,6 @@ namespace Client.Views.Forms
 
                 MessageBox.Show("Xác thực OTP thành công");
 
-                // 👉 MỞ FORM ĐẶT LẠI MẬT KHẨU
                 this.Hide();
                 using (var f = new SetUpPasswordForm(_email))
                 {
@@ -62,7 +59,7 @@ namespace Client.Views.Forms
             }
         }
 
-        private async void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private async void lkSendAgain_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try
             {
@@ -75,7 +72,5 @@ namespace Client.Views.Forms
                 MessageBox.Show("Không thể gửi lại OTP: " + ex.Message);
             }
         }
-
-
     }
 }
