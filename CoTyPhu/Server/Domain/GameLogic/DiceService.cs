@@ -23,7 +23,7 @@ namespace Server.Domain.GameLogic
                 return (d1 + d2, isDouble);
             }
 
-            private int RandomNumber()
+        private int RandomNumber()
             {
                 return Random.Shared.Next(0, 6);
             }
