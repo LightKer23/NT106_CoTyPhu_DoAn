@@ -96,13 +96,33 @@ namespace Client.Views.Forms
 
         private void HandleServerEvent(MessageEnvelope env)
         {
-            if (env.Type == MessageType.RoomUpdatedEvent)
+            switch (env.Type)
             {
-                BeginInvoke(new Action(async () =>
-                {
-                    await ReloadPlayers();
-                }));
+                case MessageType.RoomUpdatedEvent:
+                    BeginInvoke(new Action(async () =>
+                    {
+                        await ReloadPlayers();
+                    }));
+                    break;
+
+                case MessageType.StartMatchResponse:
+                    BeginInvoke(new Action(() =>
+                    {
+                        GoToMainForm();
+                    }));
+                    break;
             }
+        }
+
+        private void GoToMainForm()
+        {
+            ClientSession.Tcp.OnEvent -= HandleServerEvent;
+
+            Hide();
+
+            var main = new MainForm(ClientSession.MatchID, ClientSession.PlayerID);
+
+            main.Show();
         }
 
 

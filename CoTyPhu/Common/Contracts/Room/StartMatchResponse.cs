@@ -9,5 +9,6 @@ namespace Common.Contracts.Room
     public class StartMatchResponse
     {
         public bool Success { get; set; }
+        public int MatchId { get; set; }
     }
 }
