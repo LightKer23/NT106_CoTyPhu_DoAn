@@ -1,10 +1,9 @@
 ﻿using Common.Constracts;
-using Common.Contracts.Game;
-using Common.Domain.Game.Enums;
 using Server.Domain.GameState;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
+using Common.Domain.Game.Enums;
+using System.Linq;
+using Common.Contracts.Game;
 
 namespace Server.Domain.GameLogic
 {
@@ -56,56 +55,6 @@ namespace Server.Domain.GameLogic
 
             return TileType.Property;
         }
-
-        public bool BuyTile(MatchState match, PlayerState player)
-        {
-            int tileIndex = player.Position;
-            Tile tile = match.Board[tileIndex];
-
-            // Không ở trạng thái chờ mua
-            if (!match.WaitingForBuyDecision)
-                return false;
-
-            // Không đủ tiền hoặc đã có chủ
-            if (tile is PropertyTile pTile)
-            {
-                if (pTile.PlayerOwnerId != null || player.Money < pTile.landPrice)
-                    return false;
-
-                // Trừ tiền & gán chủ
-                DeductMoney(player, pTile.landPrice);
-                pTile.PlayerOwnerId = player.PlayerId;
-
-                return true;
-            }
-
-            if (tile is RailRoadTile rrTile)
-            {
-                if (rrTile.PlayerOwnerId != null || player.Money < rrTile.buyPrice)
-                    return false;
-
-                DeductMoney(player, rrTile.buyPrice);
-                rrTile.PlayerOwnerId = player.PlayerId;
-
-                player.RailRoadCount++;
-                return true;
-            }
-
-            if (tile is UtilityTile uTile)
-            {
-                if (uTile.PlayerOwnerId != null || player.Money < uTile.buyPrice)
-                    return false;
-
-                DeductMoney(player, uTile.buyPrice);
-                uTile.PlayerOwnerId = player.PlayerId;
-
-                player.UtilityCount++;
-                return true;
-            }
-
-            return false;
-        }
-
 
         //Tính tiền thuê
         private int getRentPrice(PlayerState player, Tile tile)
@@ -242,38 +191,19 @@ namespace Server.Domain.GameLogic
         }
 
 
-
         //Kiểm tra phá sản
-        public void HandleBankrupt(MatchState match, PlayerState player)
+        public bool CheckBankrupt(PlayerState player)
         {
-            player.IsBankrupt = true;
-            player.Money = 0;
-
-            foreach (var tile in match.Board)
+            if (player.Money < 0)
             {
-                if (tile is PropertyTile p && p.PlayerOwnerId == player.PlayerId)
-                    p.PlayerOwnerId = null;
-
-                if (tile is RailRoadTile r && r.PlayerOwnerId == player.PlayerId)
-                    r.PlayerOwnerId = null;
-
-                if (tile is UtilityTile u && u.PlayerOwnerId == player.PlayerId)
-                    u.PlayerOwnerId = null;
+                player.IsBankrupt = true;
+                player.Money = 0;
+                return true;
             }
+            return false;
         }
 
-        private bool IsOwner(PlayerState player, Tile tile)
-        {
-            return tile switch
-            {
-                PropertyTile p => p.PlayerOwnerId == player.PlayerId,
-                RailRoadTile r => r.PlayerOwnerId == player.PlayerId,
-                UtilityTile u => u.PlayerOwnerId == player.PlayerId,
-                _ => false
-            };
-        }
-
-        public void SellSingleTile(MatchState match, PlayerState player, Tile tile)
+        public void sellTile(PlayerState player, Tile tile)
         {
             if (tile is PropertyTile pTile)
             {

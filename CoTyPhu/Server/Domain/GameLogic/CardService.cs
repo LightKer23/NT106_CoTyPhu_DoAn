@@ -60,7 +60,6 @@ namespace Server.Domain.GameLogic
                     case ChanceCardType.PayMoney:
                         {
                             flowService.DeductMoney(player, card.Amount);
-                            flowService.HandleBankrupt(match, player);
                             break;
                         }
 
@@ -239,110 +238,13 @@ namespace Server.Domain.GameLogic
                             }
 
                             flowService.DeductMoney(player, totalCost);
-                            flowService.HandleBankrupt(match, player);
+                            flowService.CheckBankrupt(player);
 
                             break;
                         }
                 }
 
             }
-
-            if (card.Type == CardType.CommunityChest)
-            {
-                switch (card.ChestType)
-                {
-                    case CommunityChestCardType.EarnMoney:
-                        {
-                            flowService.AddMoney(player, card.Amount);
-                            break;
-                        }
-
-                    case CommunityChestCardType.PayMoney:
-                        {
-                            flowService.DeductMoney(player, card.Amount);
-                            flowService.HandleBankrupt(match, player);
-                            break;
-                        }
-
-                    case CommunityChestCardType.GetOutOfJailFree:
-                        {
-                            player.hasGetOutOfJailCard = true;
-                            break;
-                        }
-
-                    case CommunityChestCardType.CollectFromEachPlayer:
-                        {
-                            foreach (var otherPlayer in match.Players.Values)
-                            {
-                                if (otherPlayer.PlayerId == player.PlayerId)
-                                    continue;
-
-                                if (otherPlayer.IsBankrupt)
-                                    continue;
-
-                                flowService.DeductMoney(otherPlayer, card.Amount);
-                                flowService.AddMoney(player, card.Amount);
-
-                                flowService.HandleBankrupt(match, player);
-                            }
-                            break;
-                        }
-
-                    case CommunityChestCardType.MoveToTile:
-                        {
-                            int oldPos = player.Position;
-                            int newPos = card.MoveToTileIndex;
-
-                            // đi qua GO
-                            if (newPos < oldPos)
-                            {
-                                flowService.AddMoney(player, 200);
-                            }
-
-                            // cập nhật vị trí
-                            player.Position = newPos;
-
-                            Tile tile = match.Board[player.Position];
-                            flowService.HandleProperty(match, player, tile);
-
-                            break;
-                        }
-
-                    case CommunityChestCardType.GoToJail:
-                        {
-                            player.Position = 10;
-                            player.InJail = true;
-                            break;
-                        }
-
-                    case CommunityChestCardType.StreetRepairs:
-                        {
-                            int totalCost = 0;
-
-                            foreach (var tile in match.Board)
-                            {
-                                if (tile is PropertyTile pTile &&
-                                    pTile.PlayerOwnerId == player.PlayerId)
-                                {
-                                    // 40$ mỗi nhà (chuẩn Monopoly Community Chest)
-                                    totalCost += pTile.houseCount * 40;
-
-                                    // 115$ mỗi khách sạn
-                                    if (pTile.hasHotel)
-                                    {
-                                        totalCost += 115;
-                                    }
-                                }
-                            }
-
-                            flowService.DeductMoney(player, totalCost);
-                            flowService.HandleBankrupt(match, player);
-
-                            break;
-                        }
-                }
-            }
-
         }
     }
 }

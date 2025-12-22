@@ -4,10 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Constracts.Room
+namespace Common.Contracts.Room
 {
-    public class StartMatchEvent
+    public class LeaveRoomRequest
     {
-        public int MatchID { get; set; }
     }
 }

@@ -1,11 +1,11 @@
-﻿using Server.Infrastructure.Network;
+﻿using Server.Domain.GameState.Board;
+using Server.Infrastructure.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Domain.GameState;
-using Server.Domain.GameState.Board;
 
 namespace Server.Domain
 {
@@ -19,5 +19,9 @@ namespace Server.Domain
 
         // Bàn cờ dùng chung
         public static List<Tile> Board { get; set; } = BoardLoader.LoadDefaultBoard();
+        public static ClientConnection? CurrentConnection { get; set; }
+
+
+
     }
 }
