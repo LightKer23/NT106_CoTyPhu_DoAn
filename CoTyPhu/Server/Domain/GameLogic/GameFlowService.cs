@@ -20,6 +20,51 @@ namespace Server.Domain.GameLogic
             return player.Position;
         }
 
+        //Xử lý ô đất
+        private TileType HandleProperty(
+            MatchState match,
+            PlayerState player,
+            Tile tile)
+        {
+
+            if (tile is PropertyTile pTile)
+            {
+                // Chưa có chủ → hỏi mua
+                if (pTile.PlayerOwnerId == null)
+                {
+                    match.WaitingForBuyDecision = true;
+                    match.PendingTileIndex = GetCurrentTileIndex(player);
+                    return TileType.Property;
+                }
+
+                // Đất của người khác → trả tiền thuê
+                if (pTile.PlayerOwnerId != player.PlayerId)
+                {
+                    // Chưa có chủ → hỏi mua
+                    if (pTile.PlayerOwnerId == null)
+                    {
+                        match.WaitingForBuyDecision = true;
+                        match.PendingTileIndex = GetCurrentTileIndex(player);
+                        return TileType.Property;
+                    }
+
+                    // Đất của người khác → trả tiền thuê
+                    if (pTile.PlayerOwnerId != player.PlayerId)
+                    {
+                        PayRent(match, player, pTile);
+                    }
+
+                    return TileType.Property;
+
+                }
+
+                return TileType.Property;
+            }
+
+            return TileType.Property;
+        }
+
+        //Tính tiền thuê
         private int getRentPrice(PlayerState player, Tile tile)
         {
             int RentPrice = 0;
@@ -80,77 +125,72 @@ namespace Server.Domain.GameLogic
         }
 
         //Cộng / Trừ tiền
-        private void ChangeMoney(PlayerState player, int amount)
+        public void ChangeMoney(PlayerState player, int amount)
         {
             player.Money += amount;
         }
 
         //Trả tiền thuê
-        private void PayRent(MatchState match, PlayerState player, Tile tile)
+        public void PayRent(MatchState match, PlayerState player, Tile tile)
         {
             int rentPrice = getRentPrice(player, tile);
 
-            if (rentPrice > player.Money)
-            {
-                //Bán nhà
-            }
-            else
-            {
-
-            }
-        }
-
-        //Xử lý ô đất
-        private TileType HandleProperty(
-            MatchState match,
-            PlayerState player,
-            Tile tile)
-        {
+            player.Money -= rentPrice;
 
             if (tile is PropertyTile pTile)
             {
-                // Chưa có chủ → hỏi mua
-                if (pTile.PlayerOwnerId == null)
-                {
-                    match.WaitingForBuyDecision = true;
-                    match.PendingTileIndex = GetCurrentTileIndex(player);
-                    return TileType.Property;
-                }
-
-                // Đất của người khác → trả tiền thuê
-                if (pTile.PlayerOwnerId != player.PlayerId)
-                {
-                        // Chưa có chủ → hỏi mua
-                        if (pTile.PlayerOwnerId == -1)
-                        {
-                            match.WaitingForBuyDecision = true;
-                            match.PendingTileIndex = GetCurrentTileIndex(player);
-                            return TileType.Property;
-                        }
-
-                        // Đất của người khác → trả tiền thuê
-                        if (pTile.PlayerOwnerId != player.PlayerId)
-                        {
-                            PayRent(match, player, pTile);
-                        }
-
-                        return TileType.Property;
-
-                }
-
-                return TileType.Property;
+                var owner = match.Players[pTile.PlayerOwnerId.Value];
+                owner.Money += rentPrice;
             }
+            else if(tile is RailRoadTile rrTile)
+            {
+                var owner = match.Players[rrTile.PlayerOwnerId.Value];
+                owner.Money += rentPrice;
+            }
+            else if(tile is UtilityTile uTile)
+            {
+                var owner = match.Players[uTile.PlayerOwnerId.Value];
+                owner.Money += rentPrice;
+            }
+            
 
-            return TileType.Property;
         }
 
         //Kiểm tra phá sản
-        private void CheckBankrupt(PlayerState player)
+        public bool CheckBankrupt(PlayerState player)
         {
             if (player.Money < 0)
             {
                 player.IsBankrupt = true;
                 player.Money = 0;
+                return true;
+            }
+            return false;
+        }
+
+        public void sellTile(PlayerState player, Tile tile)
+        {
+            if (tile is PropertyTile pTile)
+            {
+                pTile.PlayerOwnerId = null;
+                
+                if(pTile.hasHotel)
+                {
+                    player.Money += (pTile.hotelPrice / 2);
+                    pTile.hasHotel = false;
+                }
+                player.Money += ((pTile.housePrice * pTile.houseCount) / 2);
+                pTile.houseCount = 0;
+            }
+            else if (tile is RailRoadTile rrTile)
+            {
+                rrTile.PlayerOwnerId = null;
+                player.Money += rrTile.sellPrice;
+            }
+            else if (tile is UtilityTile uTile)
+            {
+                uTile.PlayerOwnerId = null;
+                player.Money += uTile.sellPrice;
             }
         }
 
@@ -162,8 +202,7 @@ namespace Server.Domain.GameLogic
             do
             {
                 match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
-            }
-            while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
+            } while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
         }
 
         //Gửi Event di chuyển
