@@ -1,11 +1,11 @@
-﻿using Server.Domain.Board;
-using Server.Infrastructure.Network;
+﻿using Server.Infrastructure.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Server.Domain.GameState;
+using Server.Domain.GameState.Board;
 
 namespace Server.Domain
 {
