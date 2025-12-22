@@ -23,7 +23,7 @@ namespace Client.Views.Forms
             var resp = await ClientSession.Tcp.CreateRoomAsync(ClientSession.AccountID);
 
             ClientSession.MatchID = resp.RoomID;
-            ClientSession.PlayerID = 1; // host
+            //ClientSession.PlayerID = 1; // host
 
             Hide();
             new ChooseCharacterForm().Show();

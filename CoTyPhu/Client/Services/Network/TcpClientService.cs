@@ -231,20 +231,34 @@ namespace Client.Services.Network
 
         public async Task SendEnvelopeAsync(MessageEnvelope env, CancellationToken ct = default)
         {
-            EnsureConnected();
+            if (!IsConnected) return; // <== đừng throw nữa, vì có thể server vừa đóng
 
             byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(env, JsonOpt));
 
             await _sendLock.WaitAsync(ct);
             try
             {
-                await WriteFrameAsync(_stream!, payload, ct);
+                // _stream có thể bị null nếu vừa Dispose
+                var stream = _stream;
+                if (stream == null) return;
+
+                await WriteFrameAsync(stream, payload, ct);
+            }
+            catch (IOException)
+            {
+                // Server đóng socket -> đóng client cho sạch, tránh crash
+                Dispose();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Stream/socket đã bị dispose -> bỏ qua
             }
             finally
             {
                 _sendLock.Release();
             }
         }
+
 
         // ================== RECEIVE LOOP ==================
         private async Task ReceiveLoopAsync(CancellationToken ct)

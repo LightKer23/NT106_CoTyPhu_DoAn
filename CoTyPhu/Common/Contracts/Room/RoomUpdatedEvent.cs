@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Room
 {
-    public class LeaveRoomReponse
+    public class RoomUpdatedEvent
     {
-        public bool Success { get; set; }
-        public bool RoomClosed { get; set; }
+        public int RoomId { get; set; }
     }
 }

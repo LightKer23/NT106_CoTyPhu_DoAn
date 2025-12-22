@@ -16,5 +16,8 @@ namespace Common.Domain.Models.Entities
         public int Money { get; set; }
         public int Position { get; set; }
         public string StatusPlayer { get; set; } //Bankrupt, Crash, Playing, Waiting
+
+        public int CharacterIndex { get; set; }
+
     }
 }
