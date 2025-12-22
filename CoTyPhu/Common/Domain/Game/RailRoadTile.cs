@@ -1,9 +1,9 @@
 ﻿using Common.Domain.Game.Enums;
 public class RailRoadTile : Tile
 {
-    private int? owner { get; set; } = null;
-    private int buyPrice { get; set; }
-    private int sellPrice {  get; set; }
+    public int? PlayerOwnerId { get; set; } = null;
+    public int buyPrice { get; set; }
+    public int sellPrice {  get; set; }
 
     public RailRoadTile(
         string name,

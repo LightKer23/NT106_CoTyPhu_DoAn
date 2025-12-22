@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Common.Domain.Game.Enums;
 
-namespace Server.Domain.Board
+namespace Server.Domain.GameState.Board
 {
     public static class BoardLoader
     {
@@ -42,6 +42,7 @@ namespace Server.Domain.Board
                 new PropertyTile("Phan The Hien", 220, 150, 150, new List<int>{18, 90, 250, 700, 875, 1050}, 110),
                 new ChanceTile(),
                 new PropertyTile("Kha Van Can", 220, 150, 150, new List<int>{18, 90, 250, 700, 875, 1050}, 110),
+                new PropertyTile("Nguyen Tri Phuong", 240, 150, 150, new List<int>{20, 100, 300, 750, 925, 1100}, 120),
                 new RailRoadTile("Ben Xe Cho Lon", 200, 100),
                 new PropertyTile("Le Dai Hanh", 260, 150, 150, new List<int>{22, 110, 330, 800, 975, 1150}, 130),
                 new PropertyTile("Truong Chinh", 260, 150, 150, new List<int>{22, 110, 330, 800, 975, 1150}, 130),

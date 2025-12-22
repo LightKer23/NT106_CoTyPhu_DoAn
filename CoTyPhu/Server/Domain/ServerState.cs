@@ -1,4 +1,4 @@
-﻿using Server.Domain.Board;
+﻿using Server.Domain.GameState.Board;
 using Server.Infrastructure.Network;
 using System;
 using System.Collections.Generic;

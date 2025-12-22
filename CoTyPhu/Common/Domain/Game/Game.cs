@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 public class Game
 {
-    public List <int> Players { get; set; }
+    public List<int> Players { get; set; }
     public List<Tile> Board { get; set; }
 
     public ChanceDeck ChanceDeck { get; set; }

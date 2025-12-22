@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Server.Domain.GameState.Board;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,14 +21,26 @@ namespace Server.Domain.GameState
         // trạng thái trận
         public int IsMatch { get; set; } // 1 = bắt đầu, 0 = chưa bắt đầu, 2 = kết thúc
 
+        //Vị trí hiện tại của người chơi
+        public int CurrentPlayerIndex { get; set; }
+        
+        //Khởi tạo Bàn Game
+        public List<Tile> Board { get; set; } = BoardLoader.LoadDefaultBoard();
+
+        //Mua hay không
+        public bool WaitingForBuyDecision { get; set; }
+
+        //Index ô Server đợi người chơi quyết định mua hay không
+        public int? PendingTileIndex { get; set; }
+
         public MatchState() { }
+
 
         public MatchState(int matchId, Dictionary<int, PlayerState> players, Dictionary<int, PropertyState> properties)
         {
             MatchId = matchId;
-            Players = players;
-            Properties = properties;
-            
+            this.Players = players;
+            this.Properties = properties;
         }
     }
 }
