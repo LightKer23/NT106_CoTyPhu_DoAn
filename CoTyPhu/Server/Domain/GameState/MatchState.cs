@@ -20,6 +20,8 @@ namespace Server.Domain.GameState
         // trạng thái trận
         public int IsMatch { get; set; } // 1 = bắt đầu, 0 = chưa bắt đầu, 2 = kết thúc
 
+        public MatchState() { }
+
         public MatchState(int matchId, Dictionary<int, PlayerState> players, Dictionary<int, PropertyState> properties)
         {
             MatchId = matchId;

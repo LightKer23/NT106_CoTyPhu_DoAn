@@ -198,7 +198,7 @@ namespace Server.Infrastructure.Database.Repository
             {
                 var matchRepo = new MatchRepo(_db);
 
-                matchRepo.IncreasePlayerCount(idMatch: idMatch, -1);
+                matchRepo.DecreasePlayerCount(idMatch);
             }
             catch { }
 
@@ -210,7 +210,7 @@ namespace Server.Infrastructure.Database.Repository
                 int alive = playerRepo.CountAlive(idMatch);
 
                 if (alive == 1)
-                    matchRepo.UpdateEnd(idMatch);
+                    matchRepo.EndMatch(idMatch);
             }
             catch { }
 

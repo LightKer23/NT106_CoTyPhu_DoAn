@@ -7,14 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Contracts\Persistence\" />
-    <Folder Include="Contracts\Services\" />
+    <Compile Remove="Contracts\Persistence\**" />
+    <Compile Remove="Contracts\Services\**" />
+    <Compile Remove="Messaging\**" />
+    <EmbeddedResource Remove="Contracts\Persistence\**" />
+    <EmbeddedResource Remove="Contracts\Services\**" />
+    <EmbeddedResource Remove="Messaging\**" />
+    <None Remove="Contracts\Persistence\**" />
+    <None Remove="Contracts\Services\**" />
+    <None Remove="Messaging\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Domain\Chat\" />
     <Folder Include="Domain\User\" />
     <Folder Include="Domain\Room\" />
-    <Folder Include="Messaging\Enums\" />
-    <Folder Include="Messaging\Responses\" />
-    <Folder Include="Messaging\Requests\" />
   </ItemGroup>
 
 </Project>

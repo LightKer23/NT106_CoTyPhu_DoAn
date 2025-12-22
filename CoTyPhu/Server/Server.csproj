@@ -7,11 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Application\GameEngine\" />
-    <Folder Include="Application\Services\" />
-    <Folder Include="Infrastructure\Networking\" />
-    <Folder Include="Infrastructure\Persistence\Configuration\" />
-    <Folder Include="Infrastructure\Persistence\Repositories\" />
+    <Compile Remove="Application\**" />
+    <Compile Remove="Infrastructure\Networking\**" />
+    <Compile Remove="Infrastructure\Persistence\**" />
+    <EmbeddedResource Remove="Application\**" />
+    <EmbeddedResource Remove="Infrastructure\Networking\**" />
+    <EmbeddedResource Remove="Infrastructure\Persistence\**" />
+    <None Remove="Application\**" />
+    <None Remove="Infrastructure\Networking\**" />
+    <None Remove="Infrastructure\Persistence\**" />
   </ItemGroup>
 
   <ItemGroup>
