@@ -10,6 +10,7 @@ namespace Common.Constracts.Room
     public class JoinRoomResponse
     {
         public bool Success { get; set; }
+        public int IDPlayer { get; set; }  
         public List<Player> Players { get; set; }  // danh sách player trong phòng
     }
 }

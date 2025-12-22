@@ -39,8 +39,8 @@ namespace Common.Constracts
         LeaveRoomRequest,          // rời phòng trước khi chơi
         LeaveRoomEvent,            // server broadcast người rời phòng
 
-        StartMatchEvent,           // server bắt đầu trận
-        EndMatchEvent,             // server kết thúc trận
+        StartMatchRequest,           // server bắt đầu trận
+        StartMatchResponse,             // server kết thúc trận
 
         RoomStateEvent,            // cập nhật danh sách player trong phòng
 

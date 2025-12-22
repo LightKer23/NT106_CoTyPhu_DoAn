@@ -9,6 +9,7 @@ namespace Server.Domain.GameState
     public class PlayerState
     {
         public int PlayerId { get; set; }
+        public int AccountId { get; set; }
 
         // vị trí trên bàn cờ
         public int Position { get; set; } = 0;

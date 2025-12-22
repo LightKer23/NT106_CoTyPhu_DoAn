@@ -3,15 +3,12 @@ using Common.Constracts.Room;
 using Common.Contracts.Auth;
 using Common.Contracts.Game;
 using Common.Contracts.Room;
-using Common.Contracts.Room.Common.Constracts.Room;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Client.Services.Network
@@ -22,10 +19,10 @@ namespace Client.Services.Network
         private NetworkStream? _stream;
         private readonly SemaphoreSlim _sendLock = new(1, 1);
 
-        // map MessageId -> waiter (đợi đúng response)
+        // MessageId -> waiter
         private readonly ConcurrentDictionary<Guid, TaskCompletionSource<MessageEnvelope>> _pending = new();
 
-        // Event broadcast từ server (TurnResultEvent, PlayerMovedEvent...)
+        // Server push (events)
         public event Action<MessageEnvelope>? OnEvent;
 
         public bool IsConnected => _tcp?.Connected == true && _stream != null;
@@ -35,6 +32,10 @@ namespace Client.Services.Network
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
+        // Nếu muốn đổi timeout, set property này
+        public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(12);
+
+        // ================== CONNECT ==================
         public async Task ConnectAsync(string host, int port, CancellationToken ct = default)
         {
             if (IsConnected) return;
@@ -46,138 +47,138 @@ namespace Client.Services.Network
             _ = Task.Run(() => ReceiveLoopAsync(ct), ct);
         }
 
-        public Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default)
+        private void EnsureConnected()
         {
-            return RequestAsync<LoginRequest, LoginResponse>(
+            if (!IsConnected) throw new InvalidOperationException("Client chưa ConnectAsync()");
+        }
+
+        // ================== AUTH ==================
+        public Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default)
+            => RequestAsync<LoginRequest, LoginResponse>(
                 MessageType.LoginRequest,
                 MessageType.LoginResponse,
                 new LoginRequest { Username = username, Password = password },
-                matchId: null, playerId: null,
-                ct: ct);
-        }
+                matchId: null, playerId: null, ct: ct);
 
         public Task<RegisterResponse> RegisterAsync(RegisterRequest req, CancellationToken ct = default)
-        {
-            return RequestAsync<RegisterRequest, RegisterResponse>(
+            => RequestAsync<RegisterRequest, RegisterResponse>(
                 MessageType.RegisterRequest,
                 MessageType.RegisterResponse,
                 req,
-                matchId: null, playerId: null,
-                ct: ct);
-        }
-
-
-        public Task<VerifyOTPResponse> VerifyOTPAsync(string email, string otp, CancellationToken ct = default)
-        {
-            return RequestAsync<VerifyOTPRequest, VerifyOTPResponse>(
-                MessageType.VerifyOTPRequest,
-                MessageType.VerifyOTPResponse,
-                new VerifyOTPRequest
-                {
-                    Email = email,
-                    OTP = otp
-                },
-                matchId: null,
-                playerId: null,
-                ct: ct);
-        }
-
+                matchId: null, playerId: null, ct: ct);
 
         public Task<ForgotPasswordResponse> ForgotPasswordAsync(string email, CancellationToken ct = default)
-        {
-            return RequestAsync<ForgotPasswordRequest, ForgotPasswordResponse>(
+            => RequestAsync<ForgotPasswordRequest, ForgotPasswordResponse>(
                 MessageType.ForgotPasswordRequest,
                 MessageType.ForgotPasswordResponse,
                 new ForgotPasswordRequest { Email = email },
-                matchId: null, playerId: null,
-                ct: ct);
-        }
+                matchId: null, playerId: null, ct: ct);
+
+        public Task<VerifyOTPResponse> VerifyOTPAsync(string email, string otp, CancellationToken ct = default)
+            => RequestAsync<VerifyOTPRequest, VerifyOTPResponse>(
+                MessageType.VerifyOTPRequest,
+                MessageType.VerifyOTPResponse,
+                new VerifyOTPRequest { Email = email, OTP = otp },
+                matchId: null, playerId: null, ct: ct);
 
         public Task<ResetPasswordResponse> ResetPasswordAsync(string email, string newPassword, CancellationToken ct = default)
-        {
-            return RequestAsync<ResetPasswordRequest, ResetPasswordResponse>(
+            => RequestAsync<ResetPasswordRequest, ResetPasswordResponse>(
                 MessageType.ResetPasswordRequest,
                 MessageType.ResetPasswordResponse,
                 new ResetPasswordRequest { Email = email, NewPassword = newPassword },
-                matchId: null, playerId: null,
-                ct: ct);
-        }
+                matchId: null, playerId: null, ct: ct);
 
-        public Task<DiceRolledEvent> RollDiceAsync(int matchId, int playerId)
-        {
-            return RequestAsync<object, DiceRolledEvent>(
-                MessageType.RollDiceRequest,
-                MessageType.DiceRolledEvent,
+        // ================== ROOM (CHUẨN FLOW) ==================
+
+        // Create: server tạo roomId (SQL), host = playerId 1
+        public Task<CreateRoomResponse> CreateRoomAsync(int accountId, CancellationToken ct = default)
+            => RequestAsync<CreateRoomRequest, CreateRoomResponse>(
+                MessageType.CreateRoomRequest,
+                MessageType.CreateRoomResponse,
+                new CreateRoomRequest { AccountID = accountId },
+                matchId: null, playerId: null, ct: ct);
+
+        // Search: client truyền roomId qua MessageEnvelope.MatchId (body không cần)
+        public Task<SearchRoomResponse> SearchRoomAsync(int roomId, CancellationToken ct = default)
+            => RequestAsync<object, SearchRoomResponse>(
+                MessageType.SearchRoomRequest,
+                MessageType.SearchRoomResponse,
                 new { },
-                matchId,
-                playerId);
-        }
+                matchId: roomId, playerId: null, ct: ct);
 
-        public Task<MoneyChangedEvent> BuyDecisionAsync(int matchId, int playerId, int propertyId, bool accept)
-        {
-            return RequestAsync<BuyDecisionRequest, MoneyChangedEvent>(
-                MessageType.BuyDecisionRequest,
-                MessageType.MoneyChangedEvent,
-                new BuyDecisionRequest
+        // Join: body có roomId + accountId + characterIndex. matchId/playerId để null.
+        public Task<JoinRoomResponse> JoinRoomAsync(int roomId, int accountId, int characterIndex, CancellationToken ct = default)
+            => RequestAsync<JoinRoomRequest, JoinRoomResponse>(
+                MessageType.JoinRoomRequest,
+                MessageType.JoinRoomResponse,
+                new JoinRoomRequest
                 {
-                    PropertyID = propertyId,
-                    Accept = accept
+                    RoomID = roomId,
+                    AccountID = accountId,
+                    CharacterIndex = characterIndex
                 },
-                matchId,
-                playerId);
-        }
+                matchId: null, playerId: null, ct: ct);
 
-        public Task<PlayerReleasedFromJailEvent> GetOutOfJailAsync(int matchId, int playerId, string method)
-        {
-            return RequestAsync<GetOutOfJailRequest, PlayerReleasedFromJailEvent>(
-                MessageType.GetOutOfJailRequest,
-                MessageType.PlayerReleasedFromJailEvent,
-                new GetOutOfJailRequest { Method = method },
-                matchId,
-                playerId);
-        }
-
-        public Task<MoneyChangedEvent> UpgradePropertyAsync(int matchId, int playerId, int propertyId)
-        {
-            return RequestAsync<UpgradePropertyRequest, MoneyChangedEvent>(
-                MessageType.UpgradePropertyRequest,
-                MessageType.MoneyChangedEvent,
-                new UpgradePropertyRequest { PropertyId = propertyId },
-                matchId,
-                playerId);
-        }
-
-        public Task<TurnResultEvent> EndTurnAsync(int matchId, int playerId)
-        {
-            return RequestAsync<object, TurnResultEvent>(
-                MessageType.EndTurnRequest,
-                MessageType.TurnResultEvent,
-                new { },
-                matchId,
-                playerId);
-        }
-
-        public Task<MoneyChangedEvent> SellPropertyAsync(int matchId, int playerId, int propertyId)
-        {
-            return RequestAsync<SellPropertyRequest, MoneyChangedEvent>(
-                MessageType.SellPropertyRequest,
-                MessageType.MoneyChangedEvent,
-                new SellPropertyRequest { PropertyId = propertyId },
-                matchId,
-                playerId);
-        }
-
-        public Task<PlayerLeftEvent> LeaveMatchAsync(int matchId, int playerId)
-        {
-            return RequestAsync<object, PlayerLeftEvent>(
+        // Leave
+        public Task<PlayerLeftEvent> LeaveRoomAsync(int matchId, int playerId, CancellationToken ct = default)
+            => RequestAsync<object, PlayerLeftEvent>(
                 MessageType.LeaveMatchRequest,
                 MessageType.PlayerLeftEvent,
                 new { },
-                matchId,
-                playerId);
-        }
+                matchId: matchId, playerId: playerId, ct: ct);
 
-        // CORE REQUEST (generic)
+        // Start (host only). Server trả StartMatchResponse (bạn phải có MessageType này)
+        public Task<StartMatchResponse> StartMatchAsync(int matchId, int playerId, CancellationToken ct = default)
+            => RequestAsync<object, StartMatchResponse>(
+                MessageType.StartMatchRequest,
+                MessageType.StartMatchResponse,
+                new { },
+                matchId: matchId, playerId: playerId, ct: ct);
+
+        // ================== GAME (giữ như bạn đang dùng) ==================
+        public Task<DiceRolledEvent> RollDiceAsync(int matchId, int playerId, CancellationToken ct = default)
+            => RequestAsync<object, DiceRolledEvent>(
+                MessageType.RollDiceRequest,
+                MessageType.DiceRolledEvent,
+                new { },
+                matchId, playerId, ct);
+
+        public Task<MoneyChangedEvent> BuyDecisionAsync(int matchId, int playerId, int propertyId, bool accept, CancellationToken ct = default)
+            => RequestAsync<BuyDecisionRequest, MoneyChangedEvent>(
+                MessageType.BuyDecisionRequest,
+                MessageType.MoneyChangedEvent,
+                new BuyDecisionRequest { PropertyID = propertyId, Accept = accept },
+                matchId, playerId, ct);
+
+        public Task<PlayerReleasedFromJailEvent> GetOutOfJailAsync(int matchId, int playerId, string method, CancellationToken ct = default)
+            => RequestAsync<GetOutOfJailRequest, PlayerReleasedFromJailEvent>(
+                MessageType.GetOutOfJailRequest,
+                MessageType.PlayerReleasedFromJailEvent,
+                new GetOutOfJailRequest { Method = method },
+                matchId, playerId, ct);
+
+        public Task<MoneyChangedEvent> UpgradePropertyAsync(int matchId, int playerId, int propertyId, CancellationToken ct = default)
+            => RequestAsync<UpgradePropertyRequest, MoneyChangedEvent>(
+                MessageType.UpgradePropertyRequest,
+                MessageType.MoneyChangedEvent,
+                new UpgradePropertyRequest { PropertyId = propertyId },
+                matchId, playerId, ct);
+
+        public Task<TurnResultEvent> EndTurnAsync(int matchId, int playerId, CancellationToken ct = default)
+            => RequestAsync<object, TurnResultEvent>(
+                MessageType.EndTurnRequest,
+                MessageType.TurnResultEvent,
+                new { },
+                matchId, playerId, ct);
+
+        public Task<MoneyChangedEvent> SellPropertyAsync(int matchId, int playerId, int propertyId, CancellationToken ct = default)
+            => RequestAsync<SellPropertyRequest, MoneyChangedEvent>(
+                MessageType.SellPropertyRequest,
+                MessageType.MoneyChangedEvent,
+                new SellPropertyRequest { PropertyId = propertyId },
+                matchId, playerId, ct);
+
+        // ================== CORE REQUEST ==================
         public async Task<TResp> RequestAsync<TReq, TResp>(
             MessageType reqType,
             MessageType respType,
@@ -202,11 +203,30 @@ namespace Client.Services.Network
 
             await SendEnvelopeAsync(env, ct);
 
-            var respEnv = await tcs.Task;
+            // timeout + cancel
+            using var timeoutCts = new CancellationTokenSource(RequestTimeout);
+            using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+
+            MessageEnvelope respEnv;
+            try
+            {
+                respEnv = await tcs.Task.WaitAsync(linked.Token);
+            }
+            catch
+            {
+                _pending.TryRemove(env.MessageId, out _);
+                throw new TimeoutException($"Request timeout: {reqType}");
+            }
+
+            if (respEnv.Type == MessageType.ErrorResponse)
+                throw new InvalidOperationException($"Server error: {respEnv.Payload}");
+
             if (respEnv.Type != respType)
                 throw new InvalidOperationException($"Expected {respType} but got {respEnv.Type}");
 
-            return JsonSerializer.Deserialize<TResp>(respEnv.Payload, JsonOpt)!;
+            var obj = JsonSerializer.Deserialize<TResp>(respEnv.Payload, JsonOpt);
+            if (obj == null) throw new InvalidOperationException("Response payload is null/invalid JSON");
+            return obj;
         }
 
         public async Task SendEnvelopeAsync(MessageEnvelope env, CancellationToken ct = default)
@@ -216,66 +236,17 @@ namespace Client.Services.Network
             byte[] payload = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(env, JsonOpt));
 
             await _sendLock.WaitAsync(ct);
-            try { await WriteFrameAsync(_stream!, payload, ct); }
-            finally { _sendLock.Release(); }
+            try
+            {
+                await WriteFrameAsync(_stream!, payload, ct);
+            }
+            finally
+            {
+                _sendLock.Release();
+            }
         }
 
-        public Task<CreateRoomResponse> CreateRoomAsync(int accountId, CancellationToken ct = default)
-        {
-            return RequestAsync<CreateRoomRequest, CreateRoomResponse>(
-                MessageType.CreateRoomRequest,
-                MessageType.CreateRoomResponse,
-                new CreateRoomRequest
-                {
-                    AccountID = accountId
-                },
-                matchId: null,
-                playerId: null,
-                ct: ct
-            );
-        }
-
-
-        public Task<SearchRoomResponse> SearchRoomAsync(int accountId, CancellationToken ct = default)
-        {
-            return RequestAsync<SearchRoomRequest, SearchRoomResponse>(
-                MessageType.SearchRoomRequest,
-                MessageType.SearchRoomResponse,
-                new SearchRoomRequest
-                {
-                    AccountID = accountId
-                },
-                matchId: null,
-                playerId: null,
-                ct: ct
-            );
-        }
-
-
-
-        public Task<JoinRoomResponse> JoinRoomAsync(
-    int roomId,
-    int accountId,
-    int characterIndex,
-    CancellationToken ct = default)
-        {
-            return RequestAsync<JoinRoomRequest, JoinRoomResponse>(
-                MessageType.JoinRoomRequest,
-                MessageType.JoinRoomResponse,
-                new JoinRoomRequest
-                {
-                    RoomID = roomId,
-                    AccountID = accountId,
-                    CharacterIndex = characterIndex
-                },
-                matchId: null,
-                playerId: null,
-                ct: ct
-            );
-        }
-
-
-
+        // ================== RECEIVE LOOP ==================
         private async Task ReceiveLoopAsync(CancellationToken ct)
         {
             try
@@ -295,7 +266,7 @@ namespace Client.Services.Network
                         continue;
                     }
 
-                    // Event broadcast
+                    // Server push event
                     OnEvent?.Invoke(env);
                 }
             }
@@ -305,20 +276,21 @@ namespace Client.Services.Network
             }
         }
 
-        private void EnsureConnected()
-        {
-            if (!IsConnected) throw new InvalidOperationException("Client chưa ConnectAsync()");
-        }
-
+        // ================== DISPOSE ==================
         public void Dispose()
         {
             try { _stream?.Close(); } catch { }
             try { _tcp?.Close(); } catch { }
+
             _stream = null;
             _tcp = null;
+
+            foreach (var kv in _pending)
+                kv.Value.TrySetCanceled();
+            _pending.Clear();
         }
 
-
+        // ================== FRAMING ==================
         private static async Task WriteFrameAsync(NetworkStream stream, byte[] payload, CancellationToken ct)
         {
             byte[] len = BitConverter.GetBytes(payload.Length);
@@ -333,7 +305,8 @@ namespace Client.Services.Network
             if (lenBuf.Length == 0) return null;
 
             int length = BitConverter.ToInt32(lenBuf, 0);
-            if (length <= 0 || length > 10_000_000) throw new InvalidOperationException("Invalid frame length");
+            if (length <= 0 || length > 10_000_000)
+                throw new InvalidOperationException("Invalid frame length");
 
             byte[] payload = await ReadExactAsync(stream, length, ct);
             return payload.Length == 0 ? null : payload;
