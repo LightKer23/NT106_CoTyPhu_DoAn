@@ -34,6 +34,10 @@
             pbTile = new PictureBox();
             btnBuy = new Button();
             pnlBoard = new Panel();
+            btnEndTurn = new Button();
+            btnRollDice = new Button();
+            pbDie2 = new PictureBox();
+            pbDie1 = new PictureBox();
             pbCore = new PictureBox();
             pbTile39 = new PictureBox();
             pbTile29 = new PictureBox();
@@ -86,13 +90,11 @@
             colCurrentMoney = new ColumnHeader();
             lbHistory = new ListBox();
             btnExit = new Button();
-            pbDie1 = new PictureBox();
-            pbDie2 = new PictureBox();
-            btnRollDice = new Button();
-            btnEndTurn = new Button();
             pnlInfoTile.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pbTile).BeginInit();
             pnlBoard.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pbDie2).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pbDie1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pbCore).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pbTile39).BeginInit();
             ((System.ComponentModel.ISupportInitialize)pbTile29).BeginInit();
@@ -136,8 +138,6 @@
             ((System.ComponentModel.ISupportInitialize)pbTile0).BeginInit();
             pnlChat.SuspendLayout();
             pnlInforPlayer.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)pbDie1).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)pbDie2).BeginInit();
             SuspendLayout();
             // 
             // pnlInfoTile
@@ -236,6 +236,44 @@
             pnlBoard.Size = new Size(870, 870);
             pnlBoard.TabIndex = 52;
             // 
+            // btnEndTurn
+            // 
+            btnEndTurn.BackColor = Color.LightSalmon;
+            btnEndTurn.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnEndTurn.Location = new Point(490, 570);
+            btnEndTurn.Name = "btnEndTurn";
+            btnEndTurn.Size = new Size(120, 40);
+            btnEndTurn.TabIndex = 80;
+            btnEndTurn.Text = "Kết thúc lượt";
+            btnEndTurn.UseVisualStyleBackColor = false;
+            // 
+            // btnRollDice
+            // 
+            btnRollDice.BackColor = Color.Cornsilk;
+            btnRollDice.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            btnRollDice.Location = new Point(260, 570);
+            btnRollDice.Name = "btnRollDice";
+            btnRollDice.Size = new Size(120, 40);
+            btnRollDice.TabIndex = 2;
+            btnRollDice.Text = "Tung xúc xắc";
+            btnRollDice.UseVisualStyleBackColor = false;
+            // 
+            // pbDie2
+            // 
+            pbDie2.Location = new Point(490, 420);
+            pbDie2.Name = "pbDie2";
+            pbDie2.Size = new Size(120, 120);
+            pbDie2.TabIndex = 79;
+            pbDie2.TabStop = false;
+            // 
+            // pbDie1
+            // 
+            pbDie1.Location = new Point(260, 420);
+            pbDie1.Name = "pbDie1";
+            pbDie1.Size = new Size(120, 120);
+            pbDie1.TabIndex = 78;
+            pbDie1.TabStop = false;
+            // 
             // pbCore
             // 
             pbCore.Image = (Image)resources.GetObject("pbCore.Image");
@@ -248,6 +286,7 @@
             // 
             // pbTile39
             // 
+            pbTile39.BorderStyle = BorderStyle.FixedSingle;
             pbTile39.Image = (Image)resources.GetObject("pbTile39.Image");
             pbTile39.Location = new Point(750, 680);
             pbTile39.Margin = new Padding(2);
@@ -258,6 +297,7 @@
             // 
             // pbTile29
             // 
+            pbTile29.BorderStyle = BorderStyle.FixedSingle;
             pbTile29.Image = (Image)resources.GetObject("pbTile29.Image");
             pbTile29.Location = new Point(680, 0);
             pbTile29.Margin = new Padding(2);
@@ -268,6 +308,7 @@
             // 
             // pbTile28
             // 
+            pbTile28.BorderStyle = BorderStyle.FixedSingle;
             pbTile28.Image = (Image)resources.GetObject("pbTile28.Image");
             pbTile28.Location = new Point(610, 0);
             pbTile28.Margin = new Padding(2);
@@ -278,6 +319,7 @@
             // 
             // pbTile27
             // 
+            pbTile27.BorderStyle = BorderStyle.FixedSingle;
             pbTile27.Image = (Image)resources.GetObject("pbTile27.Image");
             pbTile27.Location = new Point(540, 0);
             pbTile27.Margin = new Padding(2);
@@ -288,6 +330,7 @@
             // 
             // pbTile26
             // 
+            pbTile26.BorderStyle = BorderStyle.FixedSingle;
             pbTile26.Image = (Image)resources.GetObject("pbTile26.Image");
             pbTile26.Location = new Point(470, 0);
             pbTile26.Margin = new Padding(2);
@@ -298,6 +341,7 @@
             // 
             // pbTile25
             // 
+            pbTile25.BorderStyle = BorderStyle.FixedSingle;
             pbTile25.Image = (Image)resources.GetObject("pbTile25.Image");
             pbTile25.Location = new Point(400, 0);
             pbTile25.Margin = new Padding(2);
@@ -308,6 +352,7 @@
             // 
             // pbTile24
             // 
+            pbTile24.BorderStyle = BorderStyle.FixedSingle;
             pbTile24.Image = (Image)resources.GetObject("pbTile24.Image");
             pbTile24.Location = new Point(330, 0);
             pbTile24.Margin = new Padding(2);
@@ -315,9 +360,11 @@
             pbTile24.Size = new Size(70, 120);
             pbTile24.TabIndex = 70;
             pbTile24.TabStop = false;
+            pbTile24.Click += pbTile24_Click;
             // 
             // pbTile23
             // 
+            pbTile23.BorderStyle = BorderStyle.FixedSingle;
             pbTile23.Image = (Image)resources.GetObject("pbTile23.Image");
             pbTile23.Location = new Point(260, 0);
             pbTile23.Margin = new Padding(2);
@@ -328,6 +375,7 @@
             // 
             // pbTile22
             // 
+            pbTile22.BorderStyle = BorderStyle.FixedSingle;
             pbTile22.Image = (Image)resources.GetObject("pbTile22.Image");
             pbTile22.Location = new Point(190, 0);
             pbTile22.Margin = new Padding(2);
@@ -338,6 +386,7 @@
             // 
             // pbTile21
             // 
+            pbTile21.BorderStyle = BorderStyle.FixedSingle;
             pbTile21.Image = (Image)resources.GetObject("pbTile21.Image");
             pbTile21.Location = new Point(120, 0);
             pbTile21.Margin = new Padding(2);
@@ -348,6 +397,7 @@
             // 
             // pbTile20
             // 
+            pbTile20.BorderStyle = BorderStyle.FixedSingle;
             pbTile20.Image = (Image)resources.GetObject("pbTile20.Image");
             pbTile20.Location = new Point(0, 0);
             pbTile20.Margin = new Padding(2);
@@ -358,6 +408,7 @@
             // 
             // pbTile19
             // 
+            pbTile19.BorderStyle = BorderStyle.FixedSingle;
             pbTile19.Image = (Image)resources.GetObject("pbTile19.Image");
             pbTile19.Location = new Point(0, 120);
             pbTile19.Margin = new Padding(2);
@@ -368,6 +419,7 @@
             // 
             // pbTile18
             // 
+            pbTile18.BorderStyle = BorderStyle.FixedSingle;
             pbTile18.Image = (Image)resources.GetObject("pbTile18.Image");
             pbTile18.Location = new Point(0, 190);
             pbTile18.Margin = new Padding(2);
@@ -378,6 +430,7 @@
             // 
             // pbTile17
             // 
+            pbTile17.BorderStyle = BorderStyle.FixedSingle;
             pbTile17.Image = (Image)resources.GetObject("pbTile17.Image");
             pbTile17.Location = new Point(0, 260);
             pbTile17.Margin = new Padding(2);
@@ -388,6 +441,7 @@
             // 
             // pbTile16
             // 
+            pbTile16.BorderStyle = BorderStyle.FixedSingle;
             pbTile16.Image = (Image)resources.GetObject("pbTile16.Image");
             pbTile16.Location = new Point(0, 330);
             pbTile16.Margin = new Padding(2);
@@ -398,6 +452,7 @@
             // 
             // pbTile15
             // 
+            pbTile15.BorderStyle = BorderStyle.FixedSingle;
             pbTile15.Image = (Image)resources.GetObject("pbTile15.Image");
             pbTile15.Location = new Point(0, 400);
             pbTile15.Margin = new Padding(2);
@@ -408,6 +463,7 @@
             // 
             // pbTile14
             // 
+            pbTile14.BorderStyle = BorderStyle.FixedSingle;
             pbTile14.Image = (Image)resources.GetObject("pbTile14.Image");
             pbTile14.Location = new Point(0, 470);
             pbTile14.Margin = new Padding(2);
@@ -418,6 +474,7 @@
             // 
             // pbTile12
             // 
+            pbTile12.BorderStyle = BorderStyle.FixedSingle;
             pbTile12.Image = (Image)resources.GetObject("pbTile12.Image");
             pbTile12.Location = new Point(0, 610);
             pbTile12.Margin = new Padding(2);
@@ -428,6 +485,7 @@
             // 
             // pbTile11
             // 
+            pbTile11.BorderStyle = BorderStyle.FixedSingle;
             pbTile11.Image = (Image)resources.GetObject("pbTile11.Image");
             pbTile11.Location = new Point(0, 680);
             pbTile11.Margin = new Padding(2);
@@ -435,9 +493,11 @@
             pbTile11.Size = new Size(120, 70);
             pbTile11.TabIndex = 58;
             pbTile11.TabStop = false;
+            pbTile11.Click += pbTile11_Click;
             // 
             // pbTile13
             // 
+            pbTile13.BorderStyle = BorderStyle.FixedSingle;
             pbTile13.Image = (Image)resources.GetObject("pbTile13.Image");
             pbTile13.Location = new Point(0, 540);
             pbTile13.Margin = new Padding(2);
@@ -448,6 +508,7 @@
             // 
             // pbTile38
             // 
+            pbTile38.BorderStyle = BorderStyle.FixedSingle;
             pbTile38.Image = (Image)resources.GetObject("pbTile38.Image");
             pbTile38.Location = new Point(750, 610);
             pbTile38.Margin = new Padding(2);
@@ -458,6 +519,7 @@
             // 
             // pbTile37
             // 
+            pbTile37.BorderStyle = BorderStyle.FixedSingle;
             pbTile37.Image = (Image)resources.GetObject("pbTile37.Image");
             pbTile37.Location = new Point(750, 540);
             pbTile37.Margin = new Padding(2);
@@ -468,6 +530,7 @@
             // 
             // pbTile36
             // 
+            pbTile36.BorderStyle = BorderStyle.FixedSingle;
             pbTile36.Image = (Image)resources.GetObject("pbTile36.Image");
             pbTile36.Location = new Point(750, 470);
             pbTile36.Margin = new Padding(2);
@@ -478,6 +541,7 @@
             // 
             // pbTile35
             // 
+            pbTile35.BorderStyle = BorderStyle.FixedSingle;
             pbTile35.Image = (Image)resources.GetObject("pbTile35.Image");
             pbTile35.Location = new Point(750, 400);
             pbTile35.Margin = new Padding(2);
@@ -488,6 +552,7 @@
             // 
             // pbTile34
             // 
+            pbTile34.BorderStyle = BorderStyle.FixedSingle;
             pbTile34.Image = (Image)resources.GetObject("pbTile34.Image");
             pbTile34.Location = new Point(750, 330);
             pbTile34.Margin = new Padding(2);
@@ -498,6 +563,7 @@
             // 
             // pbTile33
             // 
+            pbTile33.BorderStyle = BorderStyle.FixedSingle;
             pbTile33.Image = (Image)resources.GetObject("pbTile33.Image");
             pbTile33.Location = new Point(750, 260);
             pbTile33.Margin = new Padding(2);
@@ -508,6 +574,7 @@
             // 
             // pbTile32
             // 
+            pbTile32.BorderStyle = BorderStyle.FixedSingle;
             pbTile32.Image = (Image)resources.GetObject("pbTile32.Image");
             pbTile32.Location = new Point(750, 190);
             pbTile32.Margin = new Padding(2);
@@ -518,6 +585,7 @@
             // 
             // pbTile31
             // 
+            pbTile31.BorderStyle = BorderStyle.FixedSingle;
             pbTile31.Image = (Image)resources.GetObject("pbTile31.Image");
             pbTile31.Location = new Point(750, 120);
             pbTile31.Margin = new Padding(2);
@@ -528,6 +596,7 @@
             // 
             // pbTile30
             // 
+            pbTile30.BorderStyle = BorderStyle.FixedSingle;
             pbTile30.Image = (Image)resources.GetObject("pbTile30.Image");
             pbTile30.Location = new Point(750, 0);
             pbTile30.Margin = new Padding(2);
@@ -538,6 +607,7 @@
             // 
             // pbTile10
             // 
+            pbTile10.BorderStyle = BorderStyle.FixedSingle;
             pbTile10.Image = (Image)resources.GetObject("pbTile10.Image");
             pbTile10.Location = new Point(0, 750);
             pbTile10.Margin = new Padding(2);
@@ -548,6 +618,7 @@
             // 
             // pbTile9
             // 
+            pbTile9.BorderStyle = BorderStyle.FixedSingle;
             pbTile9.Image = (Image)resources.GetObject("pbTile9.Image");
             pbTile9.Location = new Point(120, 750);
             pbTile9.Margin = new Padding(2);
@@ -555,9 +626,11 @@
             pbTile9.Size = new Size(70, 120);
             pbTile9.TabIndex = 28;
             pbTile9.TabStop = false;
+            pbTile9.Click += pbTile9_Click;
             // 
             // pbTile8
             // 
+            pbTile8.BorderStyle = BorderStyle.FixedSingle;
             pbTile8.Image = (Image)resources.GetObject("pbTile8.Image");
             pbTile8.Location = new Point(190, 750);
             pbTile8.Margin = new Padding(2);
@@ -568,6 +641,7 @@
             // 
             // pbTile7
             // 
+            pbTile7.BorderStyle = BorderStyle.FixedSingle;
             pbTile7.Image = (Image)resources.GetObject("pbTile7.Image");
             pbTile7.Location = new Point(260, 750);
             pbTile7.Margin = new Padding(2);
@@ -578,6 +652,7 @@
             // 
             // pbTile6
             // 
+            pbTile6.BorderStyle = BorderStyle.FixedSingle;
             pbTile6.Image = (Image)resources.GetObject("pbTile6.Image");
             pbTile6.Location = new Point(330, 750);
             pbTile6.Margin = new Padding(2);
@@ -588,6 +663,7 @@
             // 
             // pbTile5
             // 
+            pbTile5.BorderStyle = BorderStyle.FixedSingle;
             pbTile5.Image = (Image)resources.GetObject("pbTile5.Image");
             pbTile5.Location = new Point(400, 750);
             pbTile5.Margin = new Padding(2);
@@ -598,6 +674,7 @@
             // 
             // pbTile4
             // 
+            pbTile4.BorderStyle = BorderStyle.FixedSingle;
             pbTile4.Image = (Image)resources.GetObject("pbTile4.Image");
             pbTile4.Location = new Point(470, 750);
             pbTile4.Margin = new Padding(2);
@@ -608,6 +685,7 @@
             // 
             // pbTile3
             // 
+            pbTile3.BorderStyle = BorderStyle.FixedSingle;
             pbTile3.Image = (Image)resources.GetObject("pbTile3.Image");
             pbTile3.Location = new Point(540, 750);
             pbTile3.Margin = new Padding(2);
@@ -618,6 +696,7 @@
             // 
             // pbTile2
             // 
+            pbTile2.BorderStyle = BorderStyle.FixedSingle;
             pbTile2.Image = (Image)resources.GetObject("pbTile2.Image");
             pbTile2.Location = new Point(610, 750);
             pbTile2.Margin = new Padding(2);
@@ -629,6 +708,7 @@
             // pbTile1
             // 
             pbTile1.BackColor = Color.Transparent;
+            pbTile1.BorderStyle = BorderStyle.FixedSingle;
             pbTile1.Image = (Image)resources.GetObject("pbTile1.Image");
             pbTile1.Location = new Point(680, 750);
             pbTile1.Margin = new Padding(2);
@@ -642,6 +722,7 @@
             pbTile0.BackColor = Color.Transparent;
             pbTile0.BackgroundImage = (Image)resources.GetObject("pbTile0.BackgroundImage");
             pbTile0.BackgroundImageLayout = ImageLayout.Center;
+            pbTile0.BorderStyle = BorderStyle.FixedSingle;
             pbTile0.ErrorImage = null;
             pbTile0.Image = (Image)resources.GetObject("pbTile0.Image");
             pbTile0.InitialImage = (Image)resources.GetObject("pbTile0.InitialImage");
@@ -753,44 +834,6 @@
             btnExit.Text = "Thoát";
             btnExit.UseVisualStyleBackColor = false;
             // 
-            // pbDie1
-            // 
-            pbDie1.Location = new Point(260, 420);
-            pbDie1.Name = "pbDie1";
-            pbDie1.Size = new Size(120, 120);
-            pbDie1.TabIndex = 78;
-            pbDie1.TabStop = false;
-            // 
-            // pbDie2
-            // 
-            pbDie2.Location = new Point(490, 420);
-            pbDie2.Name = "pbDie2";
-            pbDie2.Size = new Size(120, 120);
-            pbDie2.TabIndex = 79;
-            pbDie2.TabStop = false;
-            // 
-            // btnRollDice
-            // 
-            btnRollDice.BackColor = Color.Cornsilk;
-            btnRollDice.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnRollDice.Location = new Point(260, 570);
-            btnRollDice.Name = "btnRollDice";
-            btnRollDice.Size = new Size(120, 40);
-            btnRollDice.TabIndex = 2;
-            btnRollDice.Text = "Tung xúc xắc";
-            btnRollDice.UseVisualStyleBackColor = false;
-            // 
-            // btnEndTurn
-            // 
-            btnEndTurn.BackColor = Color.LightSalmon;
-            btnEndTurn.Font = new Font("Segoe UI", 10.2F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            btnEndTurn.Location = new Point(490, 570);
-            btnEndTurn.Name = "btnEndTurn";
-            btnEndTurn.Size = new Size(120, 40);
-            btnEndTurn.TabIndex = 80;
-            btnEndTurn.Text = "Kết thúc lượt";
-            btnEndTurn.UseVisualStyleBackColor = false;
-            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
@@ -809,6 +852,8 @@
             pnlInfoTile.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)pbTile).EndInit();
             pnlBoard.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pbDie2).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pbDie1).EndInit();
             ((System.ComponentModel.ISupportInitialize)pbCore).EndInit();
             ((System.ComponentModel.ISupportInitialize)pbTile39).EndInit();
             ((System.ComponentModel.ISupportInitialize)pbTile29).EndInit();
@@ -853,8 +898,6 @@
             pnlChat.ResumeLayout(false);
             pnlChat.PerformLayout();
             pnlInforPlayer.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)pbDie1).EndInit();
-            ((System.ComponentModel.ISupportInitialize)pbDie2).EndInit();
             ResumeLayout(false);
         }
 

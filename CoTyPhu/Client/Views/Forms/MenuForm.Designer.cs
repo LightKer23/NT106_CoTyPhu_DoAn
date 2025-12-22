@@ -92,6 +92,7 @@
             btnPlayWithPlayer.TabIndex = 8;
             btnPlayWithPlayer.Text = "Chơi với người";
             btnPlayWithPlayer.UseVisualStyleBackColor = false;
+            btnPlayWithPlayer.Click += btnPlayWithPlayer_Click;
             // 
             // btnPlayWithCmp
             // 

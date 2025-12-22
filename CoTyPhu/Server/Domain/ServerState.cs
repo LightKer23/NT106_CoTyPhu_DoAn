@@ -19,9 +19,8 @@ namespace Server.Domain
 
         // Bàn cờ dùng chung
         public static List<Tile> Board { get; set; } = BoardLoader.LoadDefaultBoard();
+
         public static ClientConnection? CurrentConnection { get; set; }
-
-
 
     }
 }

@@ -92,6 +92,7 @@
             lkLblForgotPsswrd.TabStop = true;
             lkLblForgotPsswrd.Text = "Quên mật khẩu?";
             lkLblForgotPsswrd.TextAlign = ContentAlignment.TopRight;
+            lkLblForgotPsswrd.LinkClicked += lkLblForgotPsswrd_LinkClicked;
             // 
             // label2
             // 
@@ -104,14 +105,13 @@
             label2.TabIndex = 8;
             label2.Text = "ĐĂNG NHẬP";
             label2.TextAlign = ContentAlignment.MiddleLeft;
-            label2.Click += label2_Click;
             // 
             // lblTxtUsername
             // 
             lblTxtUsername.IsPassword = false;
             lblTxtUsername.LabelText = "Tên người dùng";
             lblTxtUsername.Location = new Point(42, 48);
-            lblTxtUsername.Margin = new Padding(5, 5, 5, 5);
+            lblTxtUsername.Margin = new Padding(5);
             lblTxtUsername.Name = "lblTxtUsername";
             lblTxtUsername.PasswordChar = '\0';
             lblTxtUsername.Size = new Size(300, 72);
@@ -136,7 +136,7 @@
             lblTxtPassword.IsPassword = true;
             lblTxtPassword.LabelText = "Mật khẩu";
             lblTxtPassword.Location = new Point(42, 108);
-            lblTxtPassword.Margin = new Padding(5, 5, 5, 5);
+            lblTxtPassword.Margin = new Padding(5);
             lblTxtPassword.Name = "lblTxtPassword";
             lblTxtPassword.PasswordChar = '●';
             lblTxtPassword.Size = new Size(300, 72);

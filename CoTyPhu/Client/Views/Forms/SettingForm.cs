@@ -16,10 +16,5 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
         }
-
-        private void btnHistory_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }
