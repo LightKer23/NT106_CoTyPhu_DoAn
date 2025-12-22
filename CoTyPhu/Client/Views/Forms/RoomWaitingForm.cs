@@ -113,7 +113,6 @@ namespace Client.Views.Forms
                     break;
             }
         }
-
         private void GoToMainForm()
         {
             ClientSession.Tcp.OnEvent -= HandleServerEvent;
@@ -125,7 +124,9 @@ namespace Client.Views.Forms
             main.Show();
         }
 
+        private void RoomWaitingForm_Load_1(object sender, EventArgs e)
+        {
 
-
+        }
     }
 }
