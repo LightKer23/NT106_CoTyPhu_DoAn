@@ -22,6 +22,8 @@ namespace Server.Domain.GameState
         public bool IsBankrupt { get; set; }
         public bool InJail { get; set; }
 
+        public bool hasGetOutOfJailCard {  get; set; }
+
         public int RailRoadCount { get; set; }
 
         public int UtilityCount { get; set;}

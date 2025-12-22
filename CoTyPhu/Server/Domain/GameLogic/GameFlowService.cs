@@ -124,10 +124,15 @@ namespace Server.Domain.GameLogic
                 return RentPrice;
         }
 
-        //Cộng / Trừ tiền
-        public void ChangeMoney(PlayerState player, int amount)
+        //Cộng tiền
+        public void AddMoney(PlayerState player, int amount)
         {
             player.Money += amount;
+        }
+
+        public void DeductMoney(PlayerState player, int amount)
+        {
+            player.Money -= amount;
         }
 
         //Trả tiền thuê
@@ -135,22 +140,22 @@ namespace Server.Domain.GameLogic
         {
             int rentPrice = getRentPrice(player, tile);
 
-            player.Money -= rentPrice;
+            DeductMoney(player, rentPrice)
 
             if (tile is PropertyTile pTile)
             {
                 var owner = match.Players[pTile.PlayerOwnerId.Value];
-                owner.Money += rentPrice;
+                AddMoney(owner, rentPrice);
             }
             else if(tile is RailRoadTile rrTile)
             {
                 var owner = match.Players[rrTile.PlayerOwnerId.Value];
-                owner.Money += rentPrice;
+                AddMoney(owner, rentPrice);
             }
             else if(tile is UtilityTile uTile)
             {
                 var owner = match.Players[uTile.PlayerOwnerId.Value];
-                owner.Money += rentPrice;
+                AddMoney(owner, rentPrice);
             }
             
 
@@ -176,21 +181,21 @@ namespace Server.Domain.GameLogic
                 
                 if(pTile.hasHotel)
                 {
-                    player.Money += (pTile.hotelPrice / 2);
+                    AddMoney(player, (pTile.hotelPrice / 2));
                     pTile.hasHotel = false;
                 }
-                player.Money += ((pTile.housePrice * pTile.houseCount) / 2);
+                AddMoney(player, ((pTile.housePrice * pTile.houseCount) / 2));
                 pTile.houseCount = 0;
             }
             else if (tile is RailRoadTile rrTile)
             {
                 rrTile.PlayerOwnerId = null;
-                player.Money += rrTile.sellPrice;
+                AddMoney(player, rrTile.sellPrice);
             }
             else if (tile is UtilityTile uTile)
             {
                 uTile.PlayerOwnerId = null;
-                player.Money += uTile.sellPrice;
+                AddMoney(player, uTile.sellPrice);              
             }
         }
 
