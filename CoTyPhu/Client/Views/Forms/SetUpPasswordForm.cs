@@ -13,10 +13,6 @@ namespace Client.Views.Forms
         {
             InitializeComponent();
             _email = email;
-
-            // Ẩn ký tự password
-            lblTxtNewPassword.PasswordChar = '*';
-            lblTxtPasswordAgain.PasswordChar = '*';
         }
 
         private async void btnSetUpPsswrd_Click(object sender, EventArgs e)
@@ -54,7 +50,6 @@ namespace Client.Views.Forms
 
                 if (res.Success)
                 {
-                    // 👉 QUAY VỀ LOGIN
                     this.Close();
                 }
             }
@@ -74,6 +69,5 @@ namespace Client.Views.Forms
             return Regex.IsMatch(password,
                 @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w]).{8,}$");
         }
-
     }
 }

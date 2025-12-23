@@ -48,8 +48,6 @@ namespace Client.Views.Forms
                 ClientSession.Tcp.OnEvent -= HandleServerEvent;
         }
 
-
-
         private async Task ReloadPlayers()
         {
             var resp = await ClientSession.Tcp.SearchRoomAsync(ClientSession.MatchID);
@@ -61,12 +59,11 @@ namespace Client.Views.Forms
             {
                 if (p.CharacterIndex <= 0) continue;
 
-                lstPlayers.Items.Add($"Player {p.PlayerId} - {_charNames[p.CharacterIndex]}");
+                lstPlayers.Items.Add($"{p.DisplayName} - {_charNames[p.CharacterIndex]}");
             }
 
             btnStart.Enabled = ClientSession.PlayerID == 1;
         }
-
 
         private async void btnLeave_Click(object sender, EventArgs e)
         {
@@ -113,6 +110,7 @@ namespace Client.Views.Forms
                     break;
             }
         }
+
         private void GoToMainForm()
         {
             ClientSession.Tcp.OnEvent -= HandleServerEvent;
@@ -122,11 +120,6 @@ namespace Client.Views.Forms
             var main = new MainForm(ClientSession.MatchID, ClientSession.PlayerID);
 
             main.Show();
-        }
-
-        private void RoomWaitingForm_Load_1(object sender, EventArgs e)
-        {
-
         }
     }
 }
