@@ -360,7 +360,6 @@
             pbTile24.Size = new Size(70, 120);
             pbTile24.TabIndex = 70;
             pbTile24.TabStop = false;
-            pbTile24.Click += pbTile24_Click;
             // 
             // pbTile23
             // 
@@ -493,7 +492,6 @@
             pbTile11.Size = new Size(120, 70);
             pbTile11.TabIndex = 58;
             pbTile11.TabStop = false;
-            pbTile11.Click += pbTile11_Click;
             // 
             // pbTile13
             // 
@@ -626,7 +624,6 @@
             pbTile9.Size = new Size(70, 120);
             pbTile9.TabIndex = 28;
             pbTile9.TabStop = false;
-            pbTile9.Click += pbTile9_Click;
             // 
             // pbTile8
             // 
