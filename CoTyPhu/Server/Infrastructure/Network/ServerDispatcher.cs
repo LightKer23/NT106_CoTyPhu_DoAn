@@ -29,6 +29,9 @@ namespace Server.Infrastructure.Network
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
+        private readonly GameFlowService flow = new();
+
+
         private readonly AccountRepo _accountRepo;
         private readonly MatchRepo _matchRepo;
         private readonly PlayerRepo _playerRepo;
@@ -64,7 +67,7 @@ namespace Server.Infrastructure.Network
 
                 MessageType.RollDiceRequest => Task.FromResult(HandleRollDice(req)),
                 MessageType.BuyDecisionRequest => Task.FromResult(HandleBuyDecision(req)),
-                //MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)), 
+                MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)), 
 
 
                 _ => Task.FromResult(MakeError("No handler for message type"))
@@ -392,7 +395,7 @@ namespace Server.Infrastructure.Network
             int dice1 = Random.Shared.Next(1, 7);
             int dice2 = Random.Shared.Next(1, 7);
 
-            dice1 = 3; dice2 = 4; // ĐANG TEST
+            //dice1 = 1; dice2 = 1; // ĐANG TEST
 
             int from = player.Position;
             int to = (from + dice1 + dice2) % match.Board.Count;
@@ -433,44 +436,70 @@ namespace Server.Infrastructure.Network
 
         private void HandleTile(MatchState match, PlayerState player, int tileIndex, int d1, int d2)
         {
-            var flow = new GameFlowService();
 
-            Console.WriteLine($"Player {player.PlayerId} : {player.Money}");
-
-            flow.HandlePlayerLanded(match, player);
-
-            if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
             {
-                if (match.Properties.TryGetValue(tileIndex, out var property) &&
-                    _connections.TryGetValue(player.AccountId, out var conn))
-                {
-                    int price = property.type switch
-                    {
-                        PropertyType.Property => property.landPrice,
-                        PropertyType.RailRoad => property.RailRoadBuyPrice,
-                        PropertyType.Utility => property.UtilityBuyPrice,
-                        _ => 0
-                    };
+                // 1️ Xử lý logic chính của ô
+                flow.HandlePlayerLanded(match, player);
 
+                // 2️ Có hành động mua / nâng cấp cần quyết định
+                if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
+                {
+                    // Chỉ hỏi CHÍNH NGƯỜI CHƠI vừa đi
+                    if (!match.Properties.TryGetValue(tileIndex, out var property))
+                        goto END_TURN;
+
+                    if (!_connections.TryGetValue(player.AccountId, out var conn))
+                        goto END_TURN;
+
+                    // 3️ Phân biệt MUA hay NÂNG CẤP
+                    bool isUpgrade = property.PlayerOwnerId == player.PlayerId &&
+                        property.type == PropertyType.Property && !property.hasHotel;
+
+                    int price;
+
+                    if (isUpgrade)
+                    {
+                        // Nâng cấp
+                        price = property.houseCount < 4
+                            ? property.housePrice
+                            : property.hotelPrice;
+                    }
+                    else
+                    {
+                        // Mua đất
+                        price = property.type switch
+                        {
+                            PropertyType.Property => property.landPrice,
+                            PropertyType.RailRoad => property.RailRoadBuyPrice,
+                            PropertyType.Utility => property.UtilityBuyPrice,
+                            _ => 0
+                        };
+                    }
+
+                    // 4️ Gửi event hỏi quyết định
                     _ = conn.SendAsync(
                         Wrap(
                             MessageType.AskBuyPropertyEvent,
                             new AskBuyPropertyEvent
                             {
                                 TileIndex = tileIndex,
-                                Price = price
+                                Name = ServerState.Board[tileIndex].name,
+                                Price = price,
+                                IsAuction = isUpgrade // nên đổi tên thành IsUpgrade
                             },
                             match.MatchId,
                             player.PlayerId
                         )
                     );
 
-                    return; // ⛔ chờ BuyDecisionRequest
+                    return; // CHỜ BuyDecisionRequest
                 }
-            }
 
-            // 3️⃣ Không có mua bán → kết thúc lượt
-            FinishTurn(match, d1, d2);
+            END_TURN:
+                // 5️ Không có mua / nâng cấp → kết thúc lượt
+                //FinishTurn(match, d1, d2);
+                return;
+            }
         }
 
 
@@ -489,31 +518,42 @@ namespace Server.Infrastructure.Network
             if (!match.Players.TryGetValue(req.PlayerId.Value, out var player))
                 return MakeError("Player not found");
 
-            if (body.Accept)
+            if (!body.Accept)
             {
-                if (!match.Properties.TryGetValue(body.PropertyID, out var tile))
-                    return MakeError("Property not found");
+                match.WaitingForBuyDecision = false;
+                match.PendingTileIndex = null;
 
+                //FinishTurn(match, 0, 0);
 
-                tile.PlayerOwnerId = player.PlayerId;
-                player.Money -= 0;                                              // ĐANG TEST
-
-                BroadcastRoom(
+                return Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new { Success = false },
                     match.MatchId,
-                    Wrap(
-                        MessageType.PropertyUpdatedEvent,
-                        new PropertyUpdatedEvent
-                        {
-                            PropertyTileIndex = tile.TileIndex,
-                            PlayerId = player.PlayerId
-                        },
-                        match.MatchId,
-                        null
-                    )
+                    req.PlayerId
                 );
             }
 
-            FinishTurn(match, 0, 0);
+            bool bought = flow.BuyTile(match, player);
+
+            match.WaitingForBuyDecision = false;
+            match.PendingTileIndex = null;
+
+            if (!bought)
+                return MakeError("Buy property failed");
+
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new PropertyUpdatedEvent
+                    {
+                        PropertyTileIndex = player.Position,
+                        PlayerId = player.PlayerId
+                    },
+                    match.MatchId,
+                    null
+                )
+            );
 
             return Wrap(
                 MessageType.PropertyUpdatedEvent,
@@ -522,6 +562,7 @@ namespace Server.Infrastructure.Network
                 req.PlayerId
             );
         }
+
 
 
 
@@ -548,6 +589,35 @@ namespace Server.Infrastructure.Network
                 )
             );
         }
+
+
+        private MessageEnvelope HandleEndTurn(MessageEnvelope req)
+        {
+            if (!req.MatchId.HasValue || !req.PlayerId.HasValue)
+                return MakeError("Invalid EndTurn");
+
+            if (!ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+                return MakeError("Match not found");
+
+            if (match.CurrentTurnPlayerId != req.PlayerId.Value)
+                return MakeError("Not your turn");
+
+
+            // Hủy trạng thái chờ mua nếu có
+            match.WaitingForBuyDecision = false;
+            match.PendingTileIndex = null;
+
+            // Chuyển lượt
+            FinishTurn(match, 0, 0);
+
+            return Wrap(
+                MessageType.EndTurnReponse,
+                new { Success = true },
+                match.MatchId,
+                req.PlayerId
+            );
+        }
+
 
 
 

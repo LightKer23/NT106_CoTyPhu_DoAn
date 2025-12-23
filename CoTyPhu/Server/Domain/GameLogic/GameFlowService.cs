@@ -46,6 +46,9 @@ namespace Server.Domain.GameLogic
             if (!match.Properties.TryGetValue(tileIndex, out var property))
                 return true;
 
+            if(property.PlayerOwnerId == null)
+                return true;
+
             //Ô đất của mình, không làm gì
             if (property.PlayerOwnerId == player.PlayerId)
                 return true;
@@ -60,15 +63,15 @@ namespace Server.Domain.GameLogic
         {
             int tileIndex = player.Position;
 
-            if (match.Properties.TryGetValue(tileIndex, out var property))
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return false;
+
+            if (!match.WaitingForBuyDecision)
+                return false;
+
+            // 1️ MUA ĐẤT
+            if (property.PlayerOwnerId == null)
             {
-                if (!match.WaitingForBuyDecision)
-                    return false;
-
-
-                if (property.PlayerOwnerId != null)
-                    return false;
-
                 int price = property.type switch
                 {
                     PropertyType.Property => property.landPrice,
@@ -83,20 +86,49 @@ namespace Server.Domain.GameLogic
                 DeductMoney(player, price);
                 property.PlayerOwnerId = player.PlayerId;
 
-                if (property.type == PropertyType.RailRoad || player.RailRoadCount < 5)
+                if (property.type == PropertyType.RailRoad)
                     player.RailRoadCount++;
 
-                if (property.type == PropertyType.Utility || player.UtilityCount < 3)
+                if (property.type == PropertyType.Utility)
                     player.UtilityCount++;
 
                 return true;
+            }
 
-            }
-            else
+            // 2️ NÂNG CẤP ĐẤT
+            if (property.PlayerOwnerId == player.PlayerId &&
+                property.type == PropertyType.Property)
             {
-                return false;
+                // nâng nhà
+                if (!property.hasHotel)
+                {
+                    int upgradeCost =
+                        property.houseCount < 4
+                            ? property.housePrice
+                            : property.hotelPrice;
+
+                    if (player.Money < upgradeCost)
+                        return false;
+
+                    DeductMoney(player, upgradeCost);
+
+                    if (property.houseCount < 4)
+                    {
+                        property.houseCount++;
+                    }
+                    else
+                    {
+                        property.houseCount = 0;
+                        property.hasHotel = true;
+                    }
+
+                    return true;
+                }
             }
+
+            return false;
         }
+
 
         //Xử lý khi người chơi dừng ở một ô
         public void HandlePlayerLanded(MatchState match, PlayerState player)
@@ -159,21 +191,37 @@ namespace Server.Domain.GameLogic
         //Xử lý ô đất
         private void HandlePropertyTile(MatchState match, PlayerState player, int tileIndex)
         {
-
             var property = match.Properties[tileIndex];
 
-            // Đã có chủ → trả tiền thuê (hoặc không)
-            bool noRentPaid = HandleOwnedProperty(match, player);
-            if (!noRentPaid)
+            // ĐẤT CỦA NGƯỜI KHÁC → TRẢ TIỀN
+            if (property.PlayerOwnerId != null &&
+                property.PlayerOwnerId != player.PlayerId)
+            {
+                PayRent(match, player, property);
                 return;
+            }
 
-            // Chưa có chủ → hỏi mua
-            if (!HasOwner(property))
+            // ĐẤT CHƯA CÓ CHỦ → HỎI MUA
+            if (property.PlayerOwnerId == null)
             {
                 match.WaitingForBuyDecision = true;
                 match.PendingTileIndex = tileIndex;
+                return;
+            }
+
+            // ĐẤT CỦA CHÍNH MÌNH → HỎI NÂNG CẤP
+            if (property.PlayerOwnerId == player.PlayerId &&
+                property.type == PropertyType.Property)
+            {
+                // còn nâng cấp được
+                if (!property.hasHotel)
+                {
+                    match.WaitingForBuyDecision = true;
+                    match.PendingTileIndex = tileIndex;
+                }
             }
         }
+
 
 
         //Tính tiền thuê

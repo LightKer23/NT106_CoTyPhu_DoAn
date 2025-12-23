@@ -12,5 +12,6 @@ namespace Common.Contracts.Game
         public int TileIndex { get; set; }
         public string Name { get; set; }
         public int Price { get; set; }
+        public bool IsAuction { get; set; }
     }
 }

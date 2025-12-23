@@ -145,6 +145,20 @@ namespace Client.Services.Network
                 playerId: playerId,
                 ct: ct);
 
+        public Task EndTurnAsync(int matchId, int playerId)
+        {
+            var env = new MessageEnvelope
+            {
+                MessageId = Guid.NewGuid(),
+                Type = MessageType.EndTurnRequest,
+                MatchId = matchId,
+                PlayerId = playerId,
+                Payload = "{}"
+            };
+
+            return SendEnvelopeAsync(env);
+        }
+
 
         public Task<object> BuyDecisionAsync(int matchId, int playerId, int tileIndex, bool accept, CancellationToken ct = default)
         => RequestAsync<BuyDecisionRequest, object>(
