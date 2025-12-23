@@ -70,7 +70,6 @@
             btnSetting.TabIndex = 10;
             btnSetting.Text = "Cài đặt";
             btnSetting.UseVisualStyleBackColor = false;
-            btnSetting.Click += btnSetting_Click;
             // 
             // btnGuide
             // 
@@ -82,7 +81,6 @@
             btnGuide.TabIndex = 9;
             btnGuide.Text = "Hướng dẫn chơi";
             btnGuide.UseVisualStyleBackColor = false;
-            btnGuide.Click += btnGuide_Click;
             // 
             // btnPlayWithPlayer
             // 
@@ -106,7 +104,6 @@
             btnPlayWithCmp.TabIndex = 7;
             btnPlayWithCmp.Text = "Chơi với máy";
             btnPlayWithCmp.UseVisualStyleBackColor = false;
-            btnPlayWithCmp.Click += btnPlayWithCmp_Click;
             // 
             // MenuForm
             // 

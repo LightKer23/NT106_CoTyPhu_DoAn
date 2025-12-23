@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    public class PlayerMovedEvent
+    public class PlayerMoveEvent
     {
         public int PlayerId { get; set; }
-        public int NewPosition { get; set; }
+        public int Roll1 { get; set; }
+        public int Roll2 { get; set; }
     }
+
 }

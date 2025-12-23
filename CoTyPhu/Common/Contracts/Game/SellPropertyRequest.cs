@@ -8,6 +8,6 @@ namespace Common.Contracts.Game
 {
     public class SellPropertyRequest
     {
-        public int PropertyId { get; set; }
+        public List<int> PropertyId { get; set; }
     }
 }

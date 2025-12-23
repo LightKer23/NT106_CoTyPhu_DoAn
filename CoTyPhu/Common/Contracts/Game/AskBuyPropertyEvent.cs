@@ -9,6 +9,8 @@ namespace Common.Contracts.Game
 {
     public class AskBuyPropertyEvent
     {
-        public Property Tile { get; set; }  // thông tin ô đất
+        public int TileIndex { get; set; }
+        public string Name { get; set; }
+        public int Price { get; set; }
     }
 }

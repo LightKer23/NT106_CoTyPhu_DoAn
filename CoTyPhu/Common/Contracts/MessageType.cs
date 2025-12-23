@@ -60,6 +60,7 @@ namespace Common.Constracts
         EndTurnRequest,            // kết thúc lượt
 
         LeaveMatchRequest,         // thoát giữa trận
+        PropertyUpdatedEvent,
 
         // ===== GAME EVENT (Server → Client) =====
         DiceRolledEvent,         // kết quả tung xúc xắc

@@ -32,7 +32,7 @@ namespace Client.Views.Forms
                 MessageBox.Show(resp.Message);
 
                 if (resp.Success)
-                    this.Close();
+                    this.Close(); // quay về LoginForm
             }
             catch (Exception ex)
             {

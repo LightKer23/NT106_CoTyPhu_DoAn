@@ -20,7 +20,6 @@ namespace Common.Contracts.Room
     {
         public int PlayerId { get; set; }        
         public int CharacterIndex { get; set; }  
-        public string DisplayName { get; set; } = string.Empty;
     }
 }
 

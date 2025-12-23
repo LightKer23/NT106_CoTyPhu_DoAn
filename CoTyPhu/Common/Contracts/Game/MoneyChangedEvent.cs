@@ -9,6 +9,6 @@ namespace Common.Contracts.Game
     public class MoneyChangedEvent
     {
         public int PlayerId { get; set; }
-        public int Amount { get; set; }
+        public int MoneyChange { get; set; }
     }
 }
