@@ -10,7 +10,12 @@ namespace Server.Domain.GameLogic
 {
     public class CardService
     {
-        private GameFlowService flowService;
+        private readonly GameFlowService _flow;
+
+        public CardService(GameFlowService flow)
+        {
+            _flow = flow;
+        }
 
         //Bán thẻ ra tù
         public void SellGetOutOfJailCard(PlayerState player)
@@ -19,7 +24,7 @@ namespace Server.Domain.GameLogic
             if (hasGetOutOfJailCard)
             {
                 player.hasGetOutOfJailCard = false;
-                flowService.AddMoney(player, 200);
+                _flow.AddMoney(player, 200);
             }
         }
 
@@ -29,21 +34,22 @@ namespace Server.Domain.GameLogic
             return Random.Shared.Next(0, 16);
         }
 
-        //Rút một lá bài từ bộ bài Khí vận
-        public void DrawCard(MatchState match, PlayerState player, CommunityChestDeckState communityChest)
+        // Rút bài Khí vận
+        public void DrawCommunityChestCard(MatchState match, PlayerState player, List<Card> communityChestDeck)
         {
             int cardIndex = randomCardIndex();
-            var card = communityChest.communityChestDeck[cardIndex];
+            var card = communityChestDeck[cardIndex];
             applyEffectPlayer(match, player, card);
         }
 
-        //Rút một lá bài từ bộ bài Cơ hội
-        public void DrawCard(MatchState match, PlayerState player, ChanceDeckState chanceChest)
+        // Rút bài Cơ hội
+        public void DrawChanceCard(MatchState match, PlayerState player, List<Card> chanceDeck)
         {
             int cardIndex = randomCardIndex();
-            var card = chanceChest.chanceDeck[cardIndex];
+            var card = chanceDeck[cardIndex];
             applyEffectPlayer(match, player, card);
         }
+
 
         public void applyEffectPlayer(MatchState match, PlayerState player, Card card)
         {
@@ -53,14 +59,14 @@ namespace Server.Domain.GameLogic
                 {
                     case ChanceCardType.EarnMoney:
                         {
-                            flowService.AddMoney(player, card.Amount);
+                            _flow.AddMoney(player, card.Amount);
                             break;
                         }
 
                     case ChanceCardType.PayMoney:
                         {
-                            flowService.DeductMoney(player, card.Amount);
-                            flowService.HandleBankrupt(match, player);
+                            _flow.DeductMoney(player, card.Amount);
+                            _flow.HandleBankrupt(match, player);
                             break;
                         }
 
@@ -79,8 +85,8 @@ namespace Server.Domain.GameLogic
                                 if (otherPlayer.IsBankrupt)
                                     continue;
 
-                                flowService.DeductMoney(player, card.Amount);
-                                flowService.AddMoney(otherPlayer, card.Amount);
+                                _flow.DeductMoney(player, card.Amount);
+                                _flow.AddMoney(otherPlayer, card.Amount);
                             }
                             break;
                         }
@@ -92,14 +98,14 @@ namespace Server.Domain.GameLogic
                             // đi qua GO
                             if (newPos < oldPos)
                             {
-                                flowService.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             // cập nhật vị trí
                             player.Position = newPos;
 
                             // xử lý ô vừa đến
-                            flowService.HandlePlayerLanded(match, player);
+                            _flow.HandlePlayerLanded(match, player);
 
                             break;
                         }
@@ -120,7 +126,7 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             // xử lý ô vừa đến
-                            flowService.HandlePlayerLanded(match, player);
+                            _flow.HandlePlayerLanded(match, player);
 
                             break;
                         }
@@ -152,24 +158,24 @@ namespace Server.Domain.GameLogic
                             if (newPos == -1)
                             {
                                 newPos = railroadIndexes[0];
-                                flowService.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             player.Position = newPos;
 
                             Tile tile = match.Board[newPos];
-                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
+                            PropertyState newTile = _flow.ConvertTiletoPropertyState(tile, player.Position);
 
                             //Nếu Railroad đã có chủ x2 tiền thuê
                             if (newTile.type == PropertyType.RailRoad &&
                                 newTile.PlayerOwnerId != null &&
                                 newTile.PlayerOwnerId != player.PlayerId)
                             {
-                                flowService.PayRent(match, player, newTile);
+                                _flow.PayRent(match, player, newTile);
                             }
                             else
                             {
-                                flowService.HandlePlayerLanded(match, player);
+                                _flow.HandlePlayerLanded(match, player);
                             }
 
                             break;
@@ -195,25 +201,25 @@ namespace Server.Domain.GameLogic
                             if (newPos == -1)
                             {
                                 newPos = utilityIndexes[0];
-                                flowService.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             // cập nhật vị trí
                             player.Position = newPos;
 
                             Tile tile = match.Board[newPos];
-                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
+                            PropertyState newTile = _flow.ConvertTiletoPropertyState(tile, player.Position);
 
                             // nếu Utility đã có chủ dice x10
                             if (newTile.type == PropertyType.Utility &&
                                 newTile.PlayerOwnerId != null &&
                                 newTile.PlayerOwnerId != player.PlayerId)
                             {
-                                flowService.PayRent(match, player, newTile);
+                                _flow.PayRent(match, player, newTile);
                             }
                             else
                             {
-                                flowService.HandlePlayerLanded(match, player);
+                                _flow.HandlePlayerLanded(match, player);
                             }
 
                             break;
@@ -240,8 +246,8 @@ namespace Server.Domain.GameLogic
                             }
 
 
-                            flowService.DeductMoney(player, totalCost);
-                            flowService.HandleBankrupt(match, player);
+                            _flow.DeductMoney(player, totalCost);
+                            _flow.HandleBankrupt(match, player);
 
                             break;
                         }
@@ -255,14 +261,14 @@ namespace Server.Domain.GameLogic
                 {
                     case CommunityChestCardType.EarnMoney:
                         {
-                            flowService.AddMoney(player, card.Amount);
+                            _flow.AddMoney(player, card.Amount);
                             break;
                         }
 
                     case CommunityChestCardType.PayMoney:
                         {
-                            flowService.DeductMoney(player, card.Amount);
-                            flowService.HandleBankrupt(match, player);
+                            _flow.DeductMoney(player, card.Amount);
+                            _flow.HandleBankrupt(match, player);
                             break;
                         }
 
@@ -282,10 +288,10 @@ namespace Server.Domain.GameLogic
                                 if (otherPlayer.IsBankrupt)
                                     continue;
 
-                                flowService.DeductMoney(otherPlayer, card.Amount);
-                                flowService.AddMoney(player, card.Amount);
+                                _flow.DeductMoney(otherPlayer, card.Amount);
+                                _flow.AddMoney(player, card.Amount);
 
-                                flowService.HandleBankrupt(match, player);
+                                _flow.HandleBankrupt(match, player);
                             }
                             break;
                         }
@@ -298,13 +304,13 @@ namespace Server.Domain.GameLogic
                             // đi qua ô Bắt đầu
                             if (newPos < oldPos)
                             {
-                                flowService.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             // cập nhật vị trí
                             player.Position = newPos;
 
-                            flowService.HandlePlayerLanded(match, player);
+                            _flow.HandlePlayerLanded(match, player);
 
                             break;
                         }
@@ -336,8 +342,8 @@ namespace Server.Domain.GameLogic
                                 }
                             }
 
-                            flowService.DeductMoney(player, totalCost);
-                            flowService.HandleBankrupt(match, player);
+                            _flow.DeductMoney(player, totalCost);
+                            _flow.HandleBankrupt(match, player);
 
                             break;
                         }

@@ -3,6 +3,7 @@ using Common.Constracts.Room;
 using Common.Contracts.Auth;
 using Common.Contracts.Game;
 using Common.Contracts.Room;
+using Common.Domain.Game.Enums;
 using Common.Domain.Models.Entities;
 using Server.Domain;
 using Server.Domain.GameLogic;
@@ -391,6 +392,8 @@ namespace Server.Infrastructure.Network
             int dice1 = Random.Shared.Next(1, 7);
             int dice2 = Random.Shared.Next(1, 7);
 
+            dice1 = 3; dice2 = 4; // ĐANG TEST
+
             int from = player.Position;
             int to = (from + dice1 + dice2) % match.Board.Count;
             player.Position = to;
@@ -430,28 +433,47 @@ namespace Server.Infrastructure.Network
 
         private void HandleTile(MatchState match, PlayerState player, int tileIndex, int d1, int d2)
         {
-            var tile = match.Properties[tileIndex];
+            var flow = new GameFlowService();
 
-            if (tile.OwnerPlayerId == null && tile.Level == null)
+            Console.WriteLine($"Player {player.PlayerId} : {player.Money}");
+
+            flow.HandlePlayerLanded(match, player);
+
+            if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
             {
-                if (_connections.TryGetValue(player.AccountId, out var conn))
+                if (match.Properties.TryGetValue(tileIndex, out var property) &&
+                    _connections.TryGetValue(player.AccountId, out var conn))
                 {
-                    _ = conn.SendAsync
-                        (
-                            Wrap(MessageType.AskBuyPropertyEvent, new AskBuyPropertyEvent
+                    int price = property.type switch
+                    {
+                        PropertyType.Property => property.landPrice,
+                        PropertyType.RailRoad => property.RailRoadBuyPrice,
+                        PropertyType.Utility => property.UtilityBuyPrice,
+                        _ => 0
+                    };
+
+                    _ = conn.SendAsync(
+                        Wrap(
+                            MessageType.AskBuyPropertyEvent,
+                            new AskBuyPropertyEvent
                             {
                                 TileIndex = tileIndex,
+                                Price = price
+                            },
+                            match.MatchId,
+                            player.PlayerId
+                        )
+                    );
 
-                                Price = 0                                          // ĐANG TEST
-                                           
-                            }, match.MatchId, player.PlayerId)
-                        );
+                    return; // ⛔ chờ BuyDecisionRequest
                 }
-                return;
             }
 
+            // 3️⃣ Không có mua bán → kết thúc lượt
             FinishTurn(match, d1, d2);
         }
+
+
 
 
         private MessageEnvelope HandleBuyDecision(MessageEnvelope req)
@@ -473,7 +495,7 @@ namespace Server.Infrastructure.Network
                     return MakeError("Property not found");
 
 
-                tile.OwnerPlayerId = player.PlayerId;
+                tile.PlayerOwnerId = player.PlayerId;
                 player.Money -= 0;                                              // ĐANG TEST
 
                 BroadcastRoom(

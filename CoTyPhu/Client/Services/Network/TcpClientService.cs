@@ -168,7 +168,7 @@ namespace Client.Services.Network
             int? matchId,
             int? playerId,
             CancellationToken ct = default)
-        {
+            {
             EnsureConnected();
 
             var env = new MessageEnvelope
