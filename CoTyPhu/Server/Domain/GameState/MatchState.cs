@@ -42,5 +42,7 @@ namespace Server.Domain.GameState
             this.Players = players;
             this.Properties = properties;
         }
+
+
     }
 }

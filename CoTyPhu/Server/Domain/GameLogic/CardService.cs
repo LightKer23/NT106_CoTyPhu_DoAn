@@ -29,21 +29,22 @@ namespace Server.Domain.GameLogic
             return Random.Shared.Next(0, 16);
         }
 
-        //Rút một lá bài từ bộ bài Khí vận
-        public void DrawCard(MatchState match, PlayerState player, CommunityChestDeckState communityChest)
+        // Rút bài Khí vận
+        public void DrawCommunityChestCard(MatchState match, PlayerState player, List<Card> communityChestDeck)
         {
             int cardIndex = randomCardIndex();
-            var card = communityChest.communityChestDeck[cardIndex];
+            var card = communityChestDeck[cardIndex];
             applyEffectPlayer(match, player, card);
         }
 
-        //Rút một lá bài từ bộ bài Cơ hội
-        public void DrawCard(MatchState match, PlayerState player, ChanceDeckState chanceChest)
+        // Rút bài Cơ hội
+        public void DrawChanceCard(MatchState match, PlayerState player, List<Card> chanceDeck)
         {
             int cardIndex = randomCardIndex();
-            var card = chanceChest.chanceDeck[cardIndex];
+            var card = chanceDeck[cardIndex];
             applyEffectPlayer(match, player, card);
         }
+
 
         public void applyEffectPlayer(MatchState match, PlayerState player, Card card)
         {
