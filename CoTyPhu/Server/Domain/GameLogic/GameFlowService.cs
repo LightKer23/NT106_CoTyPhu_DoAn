@@ -242,7 +242,6 @@ namespace Server.Domain.GameLogic
                     property.PlayerOwnerId = null;
                 }
             }
-
         }
 
 
