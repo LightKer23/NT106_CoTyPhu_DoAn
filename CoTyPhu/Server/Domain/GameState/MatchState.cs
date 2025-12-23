@@ -34,7 +34,10 @@ namespace Server.Domain.GameState
         //Index ô Server đợi người chơi quyết định mua hay không
         public int? PendingTileIndex { get; set; }
 
-        public MatchState() { }
+        public MatchState()
+        {
+            Properties = CreateInitialProperties();
+        }
 
 
         public MatchState(int matchId, Dictionary<int, PlayerState> players, Dictionary<int, PropertyState> properties)
@@ -42,6 +45,7 @@ namespace Server.Domain.GameState
             MatchId = matchId;
             this.Players = players;
             this.Properties = properties;
+            Properties = CreateInitialProperties();
         }
 
         public Dictionary<int, PropertyState> CreateInitialProperties()
