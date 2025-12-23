@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Common.Domain.Game.Enums
 {
-    public enum PropertyKind
+    public enum PropertyType
     {
         Property,   // đất xây nhà / khách sạn
         RailRoad,   // ga tàu
@@ -23,7 +23,7 @@ namespace Server.Domain.GameState
         public int TileIndex { get; set; }
 
         // loại tài sản
-        public PropertyKind type { get; set; }
+        public PropertyType type { get; set; }
 
         // null = chưa mua
         public int? PlayerOwnerId { get; set; }
@@ -47,14 +47,18 @@ namespace Server.Domain.GameState
         // giá mua bến xe
         public int RailRoadBuyPrice { get; set; }
 
-        // tiền thuê theo số bến xe sở hữu (1 -> 4)
-        public int[] RailRoadRentPrice { get; set; }
+        // giá bán bến xe
+        public int RailRoadSellPrice { get; set; }
+
+        public int[] RailRoadRentPrice = { 25, 50, 100, 200 };
 
         // giá mua công ty
         public int UtilityBuyPrice { get; set; }
 
-        // hệ số nhân xúc xắc khi sở hữu 1 hoặc 2 utility
-        public int[] UtilityRentPrice { get; set; }
+        // giá bán công ty
+        public int UtilitySellPrice { get; set; }
+
+        public int[] UtilityMultiply = { 4, 10 }; 
     }
 }
 

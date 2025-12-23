@@ -98,9 +98,10 @@ namespace Server.Domain.GameLogic
                             // cập nhật vị trí
                             player.Position = newPos;
 
-                            // xử lý ô vừa đến (theo đúng HandleProperty hiện tại)
+                            // xử lý ô vừa đến
                             Tile tile = match.Board[player.Position];
-                            flowService.HandleProperty(match, player, tile);
+                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
+                            flowService.HandleProperty(match, player, newTile);
 
                             break;
                         }
@@ -122,7 +123,8 @@ namespace Server.Domain.GameLogic
 
                             // xử lý ô vừa đến
                             Tile tile = match.Board[player.Position];
-                            flowService.HandleProperty(match, player, tile);
+                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
+                            flowService.HandleProperty(match, player, newTile);
 
                             break;
                         }
@@ -160,17 +162,18 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             Tile tile = match.Board[newPos];
+                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
 
                             //Nếu Railroad đã có chủ x2 tiền thuê
-                            if (tile is RailRoadTile rrTile &&
-                                rrTile.PlayerOwnerId != null &&
-                                rrTile.PlayerOwnerId != player.PlayerId)
+                            if (newTile.type == PropertyType.RailRoad &&
+                                newTile.PlayerOwnerId != null &&
+                                newTile.PlayerOwnerId != player.PlayerId)
                             {
-                                flowService.PayRent(match, player, rrTile, 2);
+                                flowService.PayRent(match, player, newTile);
                             }
                             else
                             {
-                                flowService.HandleProperty(match, player, tile);
+                                flowService.HandleProperty(match, player, newTile);
                             }
 
                             break;
@@ -203,17 +206,18 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             Tile tile = match.Board[newPos];
+                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
 
                             // nếu Utility đã có chủ dice x10
-                            if (tile is UtilityTile uTile &&
-                                uTile.PlayerOwnerId != null &&
-                                uTile.PlayerOwnerId != player.PlayerId)
+                            if (newTile.type == PropertyType.Utility &&
+                                newTile.PlayerOwnerId != null &&
+                                newTile.PlayerOwnerId != player.PlayerId)
                             {
-                                flowService.PayRent(match, player, uTile, 10);
+                                flowService.PayRent(match, player, newTile);
                             }
                             else
                             {
-                                flowService.HandleProperty(match, player, tile);
+                                flowService.HandleProperty(match, player, newTile);
                             }
 
                             break;
@@ -223,20 +227,22 @@ namespace Server.Domain.GameLogic
                         {
                             int totalCost = 0;
 
-                            foreach (var tile in match.Board)
+                            foreach (var property in match.Properties.Values)
                             {
-                                if (tile is PropertyTile pTile && pTile.PlayerOwnerId == player.PlayerId)
+                                if (property.PlayerOwnerId == player.PlayerId &&
+                                    property.type == PropertyType.Property)
                                 {
-                                    // 25 Đô mỗi nhà
-                                    totalCost += pTile.houseCount * 25;
+                                    // 25$ mỗi nhà
+                                    totalCost += property.houseCount * 25;
 
-                                    // 100 Đô mỗi khách sạn
-                                    if (pTile.hasHotel)
+                                    // 100$ mỗi khách sạn
+                                    if (property.hasHotel)
                                     {
                                         totalCost += 100;
                                     }
                                 }
                             }
+
 
                             flowService.DeductMoney(player, totalCost);
                             flowService.HandleBankrupt(match, player);
@@ -303,7 +309,8 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             Tile tile = match.Board[player.Position];
-                            flowService.HandleProperty(match, player, tile);
+                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
+                            flowService.HandleProperty(match, player, newTile);
 
                             break;
                         }
