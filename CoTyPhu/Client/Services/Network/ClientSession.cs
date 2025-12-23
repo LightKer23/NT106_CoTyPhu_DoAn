@@ -16,6 +16,8 @@ namespace Client.Services.Network
         public static int PlayerID { get; set; }  
         public static int MatchID { get; set; }
 
+        public static ClientGameState GameState { get; } = new ClientGameState();
+
 
         public static async Task ConnectAsync()
         {
@@ -35,6 +37,36 @@ namespace Client.Services.Network
             // Dispose = đóng socket + stream
             Tcp?.Dispose();
             Tcp = null;
+        }
+
+        public class ClientGameState
+        {
+            public Dictionary<int, ClientPlayerState> Players { get; } = new();
+            public Dictionary<int, ClientPropertyState> Properties { get; } = new();
+
+            public int CurrentTurnPlayerId { get; set; }
+
+            public void Reset()
+            {
+                Players.Clear();
+                Properties.Clear();
+                CurrentTurnPlayerId = 0;
+            }
+        }
+
+        public class ClientPlayerState
+        {
+            public int PlayerId { get; set; }
+            public int Position { get; set; }
+            public int Money { get; set; }
+            public bool IsInJail { get; set; }
+        }
+
+        public class ClientPropertyState
+        {
+            public int TileIndex { get; set; }
+            public int? OwnerPlayerId { get; set; }
+            public int Level { get; set; } 
         }
     }
 }

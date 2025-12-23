@@ -3,8 +3,10 @@ using Common.Constracts.Room;
 using Common.Contracts.Auth;
 using Common.Contracts.Game;
 using Common.Contracts.Room;
+using Common.Domain.Game.Enums;
 using Common.Domain.Models.Entities;
 using Server.Domain;
+using Server.Domain.GameLogic;
 using Server.Domain.GameState;
 using Server.Infrastructure.Database.Connection;
 using Server.Infrastructure.Database.Repository;
@@ -26,6 +28,9 @@ namespace Server.Infrastructure.Network
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
+
+        private readonly GameFlowService flow = new();
+
 
         private readonly AccountRepo _accountRepo;
         private readonly MatchRepo _matchRepo;
@@ -69,7 +74,12 @@ namespace Server.Infrastructure.Network
                 MessageType.LeaveMatchRequest => Task.FromResult(HandleLeaveRoom(req)),
                 MessageType.StartMatchRequest => Task.FromResult(HandleStartMatch(req)),
 
-                _ => Task.FromResult(MakeError("Thông điệp không thể xử lý"))
+                MessageType.RollDiceRequest => Task.FromResult(HandleRollDice(req)),
+                MessageType.BuyDecisionRequest => Task.FromResult(HandleBuyDecision(req)),
+                MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)), 
+
+
+                _ => Task.FromResult(MakeError("No handler for message type"))
             };
         }
 
@@ -246,6 +256,13 @@ namespace Server.Infrastructure.Network
                     CharacterIndex = body.CharacterIndex
                 };
 
+            // ✅ADD RAM
+            match.Players[slot] = new PlayerState
+            {
+                PlayerId = slot,
+                AccountId = body.AccountID,
+                CharacterIndex = body.CharacterIndex
+            };
                 _connections[body.AccountID] = ServerState.CurrentConnection!;
 
                 if (match.CurrentTurnPlayerId == 0)
@@ -368,6 +385,257 @@ namespace Server.Infrastructure.Network
         }
         #endregion
 
+
+        // ================== GAME ==================
+
+        private MessageEnvelope HandleRollDice(MessageEnvelope req)
+        {
+            var body = JsonSerializer.Deserialize<RollDiceRequest>(req.Payload, JsonOpt)!;
+
+            // 1. Lấy match
+            if (!ServerState.Matches.TryGetValue(body.MatchId, out var match))
+                return MakeError("Match not found");
+
+            // 2. Check lượt
+            if (match.CurrentTurnPlayerId != body.PlayerId)
+                return Error("Không phải lượt bạn");
+
+            // 3. Lấy player (Dictionary<int, PlayerState>)
+            if (!match.Players.TryGetValue(body.PlayerId, out var player))
+                return MakeError("Player not in match");
+
+            // 4. Roll dice
+            int dice1 = Random.Shared.Next(1, 7);
+            int dice2 = Random.Shared.Next(1, 7);
+
+            //dice1 = 1; dice2 = 1; // ĐANG TEST
+
+            int from = player.Position;
+            int to = (from + dice1 + dice2) % match.Board.Count;
+            player.Position = to;
+
+           Console.WriteLine($"Player {player.PlayerId} rolled {dice1} and {dice2}, moved from {from} to {to} and {player.Money}");
+
+            // 5. PUSH ALL client trong phòng
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PlayerMovedEvent,
+                    new PlayerMoveEvent
+                    {
+                        PlayerId = player.PlayerId,
+                        Roll1 = dice1,
+                        Roll2 = dice2,
+                    },
+                    match.MatchId,
+                    null
+                )
+            );
+
+            // 6. Xử lý ô đất
+            HandleTile(match, player, to, dice1, dice2);
+
+            // 7. Response cho client bấm roll (không quan trọng payload)
+            return Wrap(
+                MessageType.DiceRolledEvent,
+                new { Success = true },
+                match.MatchId,
+                body.PlayerId
+            );
+        }
+
+
+
+
+        private void HandleTile(MatchState match, PlayerState player, int tileIndex, int d1, int d2)
+        {
+
+            {
+                // 1️ Xử lý logic chính của ô
+                flow.HandlePlayerLanded(match, player);
+
+                // 2️ Có hành động mua / nâng cấp cần quyết định
+                if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
+                {
+                    // Chỉ hỏi CHÍNH NGƯỜI CHƠI vừa đi
+                    if (!match.Properties.TryGetValue(tileIndex, out var property))
+                        goto END_TURN;
+
+                    if (!_connections.TryGetValue(player.AccountId, out var conn))
+                        goto END_TURN;
+
+                    // 3️ Phân biệt MUA hay NÂNG CẤP
+                    bool isUpgrade = property.PlayerOwnerId == player.PlayerId &&
+                        property.type == PropertyType.Property && !property.hasHotel;
+
+                    int price;
+
+                    if (isUpgrade)
+                    {
+                        // Nâng cấp
+                        price = property.houseCount < 4
+                            ? property.housePrice
+                            : property.hotelPrice;
+                    }
+                    else
+                    {
+                        // Mua đất
+                        price = property.type switch
+                        {
+                            PropertyType.Property => property.landPrice,
+                            PropertyType.RailRoad => property.RailRoadBuyPrice,
+                            PropertyType.Utility => property.UtilityBuyPrice,
+                            _ => 0
+                        };
+                    }
+
+                    // 4️ Gửi event hỏi quyết định
+                    _ = conn.SendAsync(
+                        Wrap(
+                            MessageType.AskBuyPropertyEvent,
+                            new AskBuyPropertyEvent
+                            {
+                                TileIndex = tileIndex,
+                                Name = ServerState.Board[tileIndex].name,
+                                Price = price,
+                                IsAuction = isUpgrade // nên đổi tên thành IsUpgrade
+                            },
+                            match.MatchId,
+                            player.PlayerId
+                        )
+                    );
+
+                    return; // CHỜ BuyDecisionRequest
+                }
+
+            END_TURN:
+                // 5️ Không có mua / nâng cấp → kết thúc lượt
+                //FinishTurn(match, d1, d2);
+                return;
+            }
+        }
+
+
+
+
+        private MessageEnvelope HandleBuyDecision(MessageEnvelope req)
+        {
+            var body = JsonSerializer.Deserialize<BuyDecisionRequest>(req.Payload, JsonOpt)!;
+
+            if (!req.MatchId.HasValue || !req.PlayerId.HasValue)
+                return MakeError("Invalid BuyDecision request");
+
+            if (!ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+                return MakeError("Match not found");
+
+            if (!match.Players.TryGetValue(req.PlayerId.Value, out var player))
+                return MakeError("Player not found");
+
+            if (!body.Accept)
+            {
+                match.WaitingForBuyDecision = false;
+                match.PendingTileIndex = null;
+
+                //FinishTurn(match, 0, 0);
+
+                return Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new { Success = false },
+                    match.MatchId,
+                    req.PlayerId
+                );
+            }
+
+            bool bought = flow.BuyTile(match, player);
+
+            match.WaitingForBuyDecision = false;
+            match.PendingTileIndex = null;
+
+            if (!bought)
+                return MakeError("Buy property failed");
+
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new PropertyUpdatedEvent
+                    {
+                        PropertyTileIndex = player.Position,
+                        PlayerId = player.PlayerId
+                    },
+                    match.MatchId,
+                    null
+                )
+            );
+
+            return Wrap(
+                MessageType.PropertyUpdatedEvent,
+                new { Success = true },
+                match.MatchId,
+                req.PlayerId
+            );
+        }
+
+
+
+
+        private void FinishTurn(MatchState match, int d1, int d2)
+        {
+            if ((d1 == 1 && d2 == 1) || (d1 == 6 && d2 == 6)) return;
+
+            // Chuyển lượt
+            match.CurrentTurnPlayerId = match.Players.Keys
+                .Where(id => id > match.CurrentTurnPlayerId)
+                .DefaultIfEmpty(match.Players.Keys.Min())
+                .First();
+
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PlayerLeftEvent,
+                    new PlayerLeftEvent
+                    {
+                        PlayerId = match.CurrentTurnPlayerId
+                    },
+                    match.MatchId,
+                    null
+                )
+            );
+        }
+
+
+        private MessageEnvelope HandleEndTurn(MessageEnvelope req)
+        {
+            if (!req.MatchId.HasValue || !req.PlayerId.HasValue)
+                return MakeError("Invalid EndTurn");
+
+            if (!ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+                return MakeError("Match not found");
+
+            if (match.CurrentTurnPlayerId != req.PlayerId.Value)
+                return MakeError("Not your turn");
+
+
+            // Hủy trạng thái chờ mua nếu có
+            match.WaitingForBuyDecision = false;
+            match.PendingTileIndex = null;
+
+            // Chuyển lượt
+            FinishTurn(match, 0, 0);
+
+            return Wrap(
+                MessageType.EndTurnReponse,
+                new { Success = true },
+                match.MatchId,
+                req.PlayerId
+            );
+        }
+
+
+
+
+
+        // ================== HELPERS ==================
         #region Helpers
         private static MessageEnvelope Wrap<T>(
             MessageType type,
@@ -392,6 +660,16 @@ namespace Server.Infrastructure.Network
             };
         #endregion
 
+
+        private MessageEnvelope Error(string message)
+        {
+            return new MessageEnvelope(
+                MessageType.ErrorResponse,
+                JsonSerializer.Serialize(new { Message = message })
+            );
+        }
+
+        // ================== OTP + HASH ==================
         #region OTP and Hash Handlers
         private static string NormalizeToSha256Hex(string input)
             => IsHexSha256(input) ? input.ToLowerInvariant() : Sha256Hex(input);

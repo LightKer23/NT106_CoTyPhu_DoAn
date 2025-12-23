@@ -2,6 +2,7 @@
 using Common.Contracts.Game;
 using Common.Domain.Game.Enums;
 using Server.Domain.GameState;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
@@ -10,175 +11,249 @@ namespace Server.Domain.GameLogic
 {
     public class GameFlowService
     {
-        //Lấy vị trí ô đất hiện tại của người chơi
-        public int GetCurrentTileIndex(PlayerState player)
+        private readonly CardService _cardService;
+
+        public GameFlowService()
         {
-            return player.Position;
+            _cardService = new CardService(this);
         }
 
-        //Xử lý ô đất
-        public TileType HandleProperty(MatchState match, PlayerState player, Tile tile)
+        //Trả về loại đất
+        public PropertyType? GetTilePropertyKind(MatchState match, PlayerState player)
         {
+            int tileIndex = player.Position;
 
-            if (tile is PropertyTile pTile)
-            {
-                // Chưa có chủ → hỏi mua
-                if (pTile.PlayerOwnerId == null)
-                {
-                    match.WaitingForBuyDecision = true;
-                    match.PendingTileIndex = GetCurrentTileIndex(player);
-                    return TileType.Property;
-                }
+            // Không phải ô tài sản
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return null;
 
-                // Đất của người khác → trả tiền thuê
-                if (pTile.PlayerOwnerId != player.PlayerId)
-                {
-                    // Chưa có chủ → hỏi mua
-                    if (pTile.PlayerOwnerId == null)
-                    {
-                        match.WaitingForBuyDecision = true;
-                        match.PendingTileIndex = GetCurrentTileIndex(player);
-                        return TileType.Property;
-                    }
-
-                    // Đất của người khác → trả tiền thuê
-                    if (pTile.PlayerOwnerId != player.PlayerId)
-                    {
-                        PayRent(match, player, pTile);
-                    }
-
-                    return TileType.Property;
-
-                }
-
-                return TileType.Property;
-            }
-
-            return TileType.Property;
+            // Trả về đúng enum sẵn có
+            return property.type;
         }
 
+        //Kiểm tra đã có chủ chưa
+        public bool HasOwner(PropertyState property)
+        {
+            return property.PlayerOwnerId != null;
+        }
+
+
+        public bool HandleOwnedProperty(MatchState match, PlayerState player)
+        {
+            int tileIndex = player.Position;
+
+            //Kiểm tra có phải ô đất không
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return true;
+
+            if(property.PlayerOwnerId == null)
+                return true;
+
+            //Ô đất của mình, không làm gì
+            if (property.PlayerOwnerId == player.PlayerId)
+                return true;
+
+            //Ô của người khác thì trả tiền thuê
+            PayRent(match, player, property);
+            return false;
+        }
+
+        //Mua đất
         public bool BuyTile(MatchState match, PlayerState player)
         {
             int tileIndex = player.Position;
-            Tile tile = match.Board[tileIndex];
 
-            // Không ở trạng thái chờ mua
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return false;
+
             if (!match.WaitingForBuyDecision)
                 return false;
 
-            // Không đủ tiền hoặc đã có chủ
-            if (tile is PropertyTile pTile)
+            // 1️ MUA ĐẤT
+            if (property.PlayerOwnerId == null)
             {
-                if (pTile.PlayerOwnerId != null || player.Money < pTile.landPrice)
+                int price = property.type switch
+                {
+                    PropertyType.Property => property.landPrice,
+                    PropertyType.RailRoad => property.RailRoadBuyPrice,
+                    PropertyType.Utility => property.UtilityBuyPrice,
+                    _ => 0
+                };
+
+                if (player.Money < price)
                     return false;
 
-                // Trừ tiền & gán chủ
-                DeductMoney(player, pTile.landPrice);
-                pTile.PlayerOwnerId = player.PlayerId;
+                DeductMoney(player, price);
+                property.PlayerOwnerId = player.PlayerId;
+
+                if (property.type == PropertyType.RailRoad)
+                    player.RailRoadCount++;
+
+                if (property.type == PropertyType.Utility)
+                    player.UtilityCount++;
 
                 return true;
             }
 
-            if (tile is RailRoadTile rrTile)
+            // 2️ NÂNG CẤP ĐẤT
+            if (property.PlayerOwnerId == player.PlayerId &&
+                property.type == PropertyType.Property)
             {
-                if (rrTile.PlayerOwnerId != null || player.Money < rrTile.buyPrice)
-                    return false;
+                // nâng nhà
+                if (!property.hasHotel)
+                {
+                    int upgradeCost =
+                        property.houseCount < 4
+                            ? property.housePrice
+                            : property.hotelPrice;
 
-                DeductMoney(player, rrTile.buyPrice);
-                rrTile.PlayerOwnerId = player.PlayerId;
+                    if (player.Money < upgradeCost)
+                        return false;
 
-                player.RailRoadCount++;
-                return true;
-            }
+                    DeductMoney(player, upgradeCost);
 
-            if (tile is UtilityTile uTile)
-            {
-                if (uTile.PlayerOwnerId != null || player.Money < uTile.buyPrice)
-                    return false;
+                    if (property.houseCount < 4)
+                    {
+                        property.houseCount++;
+                    }
+                    else
+                    {
+                        property.houseCount = 0;
+                        property.hasHotel = true;
+                    }
 
-                DeductMoney(player, uTile.buyPrice);
-                uTile.PlayerOwnerId = player.PlayerId;
-
-                player.UtilityCount++;
-                return true;
+                    return true;
+                }
             }
 
             return false;
         }
 
 
-        //Tính tiền thuê
-        private int getRentPrice(PlayerState player, Tile tile)
+        //Xử lý khi người chơi dừng ở một ô
+        public void HandlePlayerLanded(MatchState match, PlayerState player)
         {
-            int RentPrice = 0;
-            if(tile is PropertyTile pTile)
+            int tileIndex = player.Position;
+
+            // 1. Lấy loại ô (tĩnh)
+            TileType tileType = ServerState.Board[tileIndex].type;
+
+            switch (tileType)
             {
-                if(pTile.hasHotel)
-                {
-                    RentPrice = pTile.rentPrice[pTile.houseCount + 1];
-                }
-                else RentPrice = pTile.rentPrice[pTile.houseCount];
+                case TileType.Start:
+                    {
+                        return;
+                    }
+
+
+                case TileType.GoToJail:
+                    {
+                        SendPlayerToJail(match, player);
+                        return;
+                    }
+
+
+                case TileType.Tax:
+                    {
+                        HandleTax(match, player, tileIndex);
+                        return;
+                    }
+
+
+                case TileType.Chance:
+                    {
+                        HandleChance(match, player);
+                        return;
+                    }
+
+
+                case TileType.CommunityChest:
+                    {
+                        HandleCommunityChest(match, player);
+                        return;
+                    }
+
+
+                case TileType.Property:
+                case TileType.Railroad:
+                case TileType.Utility:
+                    {
+                        HandlePropertyTile(match, player, tileIndex);
+                        return;
+                    }
+
+
+                default:
+                    return;
             }
-            else if(tile is RailRoadTile railRoad)
-            {
-                switch(player.RailRoadCount)
-                {
-                    case 1:
-                        {
-                            RentPrice = 25;
-                            break;
-                        }
-                    case 2:
-                        {
-                            RentPrice = 50;
-                            break;
-                        }
-                    case 3:
-                        {
-                            RentPrice = 100;
-                            break;
-                        }
-                    case 4:
-                        {
-                            RentPrice = 200;
-                            break;
-                        }
-                }    
-            }
-            else if(tile is UtilityTile uTile)
-            {
-                DiceService diceService = new DiceService();
-                (int total, bool isDouble) result = diceService.RollDice();
-                int RollResult = result.total;
-                switch (player.UtilityCount)
-                {
-                    case 1:
-                        {
-                            RentPrice = RollResult * 4;
-                            break;
-                        }
-                    case 2:
-                        {
-                            RentPrice = RollResult * 4;
-                            break;
-                        }
-                }    
-            }    
-                return RentPrice;
         }
 
-        //Tính tiền thuê Công ty (trường hợp lá Cơ hội đến công ty gần nhất)
-        private int getUtilityRentPrice(PlayerState player, Tile tile)
+        //Xử lý ô đất
+        private void HandlePropertyTile(MatchState match, PlayerState player, int tileIndex)
         {
-            int RentPrice = 0;
-            if (tile is UtilityTile uTile)
+            var property = match.Properties[tileIndex];
+
+            // ĐẤT CỦA NGƯỜI KHÁC → TRẢ TIỀN
+            if (property.PlayerOwnerId != null &&
+                property.PlayerOwnerId != player.PlayerId)
             {
-                DiceService diceService = new DiceService();
-                (int total, bool isDouble) result = diceService.RollDice();
-                int RollResult = result.total;
-                RentPrice = RollResult * 10;
+                PayRent(match, player, property);
+                return;
             }
-            return RentPrice;
+
+            // ĐẤT CHƯA CÓ CHỦ → HỎI MUA
+            if (property.PlayerOwnerId == null)
+            {
+                match.WaitingForBuyDecision = true;
+                match.PendingTileIndex = tileIndex;
+                return;
+            }
+
+            // ĐẤT CỦA CHÍNH MÌNH → HỎI NÂNG CẤP
+            if (property.PlayerOwnerId == player.PlayerId &&
+                property.type == PropertyType.Property)
+            {
+                // còn nâng cấp được
+                if (!property.hasHotel)
+                {
+                    match.WaitingForBuyDecision = true;
+                    match.PendingTileIndex = tileIndex;
+                }
+            }
+        }
+
+
+
+        //Tính tiền thuê
+        private int GetRentPrice(PlayerState player, PropertyState property)
+        {
+            switch (property.type)
+            {
+                case PropertyType.Property:
+                    {
+                        if (property.hasHotel)
+                            return property.rentPrice[property.houseCount + 1];
+
+                        return property.rentPrice[property.houseCount];
+                    }
+
+
+                case PropertyType.RailRoad:
+                    {
+                        return property.RailRoadRentPrice[player.RailRoadCount - 1];
+                    }
+
+
+                case PropertyType.Utility:
+                    {
+                        DiceService dice = new DiceService();
+                        var (total, _) = dice.RollDice();
+                        return total * property.UtilityMultiply[player.UtilityCount - 1];
+                    }
+
+            }
+
+            return 0;
         }
 
         //Cộng tiền
@@ -193,55 +268,14 @@ namespace Server.Domain.GameLogic
         }
 
         //Trả tiền thuê
-        public void PayRent(MatchState match, PlayerState player, Tile tile)
+        public void PayRent(MatchState match, PlayerState player, PropertyState property)
         {
-            int rentPrice = getRentPrice(player, tile);
+            var owner = match.Players[property.PlayerOwnerId.Value];
+            int rent = GetRentPrice(owner, property);
 
-            DeductMoney(player, rentPrice);
-
-            if (tile is PropertyTile pTile)
-            {
-                var owner = match.Players[pTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
-            else if(tile is RailRoadTile rrTile)
-            {
-                var owner = match.Players[rrTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
-            else if(tile is UtilityTile uTile)
-            {
-                var owner = match.Players[uTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
+            DeductMoney(player, rent);
+            AddMoney(owner, rent);
         }
-
-        // Trả tiền thuê có hệ số (Cơ hội, Khí vận)
-        public void PayRent(MatchState match, PlayerState player, Tile tile, int multiplier)
-        {
-            int rentPrice = getRentPrice(player, tile) * multiplier;
-
-            DeductMoney(player, rentPrice);
-
-            if (tile is PropertyTile pTile)
-            {
-                var owner = match.Players[pTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
-            else if (tile is RailRoadTile rrTile)
-            {
-                var owner = match.Players[rrTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
-            else if (tile is UtilityTile uTile)
-            {
-                rentPrice = getUtilityRentPrice(player, tile);
-                var owner = match.Players[uTile.PlayerOwnerId.Value];
-                AddMoney(owner, rentPrice);
-            }
-        }
-
-
 
         //Kiểm tra phá sản
         public void HandleBankrupt(MatchState match, PlayerState player)
@@ -249,45 +283,85 @@ namespace Server.Domain.GameLogic
             player.IsBankrupt = true;
             player.Money = 0;
 
-            foreach (var tile in match.Board)
+            foreach (var kv in match.Properties)
             {
-                if (tile is PropertyTile p && p.PlayerOwnerId == player.PlayerId)
-                    p.PlayerOwnerId = null;
+                var property = kv.Value;
 
-                if (tile is RailRoadTile r && r.PlayerOwnerId == player.PlayerId)
-                    r.PlayerOwnerId = null;
-
-                if (tile is UtilityTile u && u.PlayerOwnerId == player.PlayerId)
-                    u.PlayerOwnerId = null;
+                if (property.PlayerOwnerId == player.PlayerId)
+                {
+                    property.PlayerOwnerId = null;
+                }
             }
+
         }
+
 
         //Bán một ô đất
-        public void SellSingleTile(MatchState match, PlayerState player, Tile tile)
+        public void SellSingleProperty(MatchState match, PlayerState player, PropertyState property)
         {
-            if (tile is PropertyTile pTile)
+            if (property.PlayerOwnerId != player.PlayerId)
+                return;
+
+            property.PlayerOwnerId = null;
+
+            switch (property.type)
             {
-                pTile.PlayerOwnerId = null;
-                
-                if(pTile.hasHotel)
-                {
-                    AddMoney(player, (pTile.hotelPrice / 2));
-                    pTile.hasHotel = false;
-                }
-                AddMoney(player, ((pTile.housePrice * pTile.houseCount) / 2));
-                pTile.houseCount = 0;
-            }
-            else if (tile is RailRoadTile rrTile)
-            {
-                rrTile.PlayerOwnerId = null;
-                AddMoney(player, rrTile.sellPrice);
-            }
-            else if (tile is UtilityTile uTile)
-            {
-                uTile.PlayerOwnerId = null;
-                AddMoney(player, uTile.sellPrice);              
+                case PropertyType.Property:
+                    if (property.hasHotel)
+                    {
+                        AddMoney(player, property.hotelPrice / 2);
+                        property.hasHotel = false;
+                    }
+
+                    AddMoney(player, (property.housePrice * property.houseCount) / 2);
+                    property.houseCount = 0;
+                    break;
+
+                case PropertyType.RailRoad:
+                    player.RailRoadCount--;
+                    AddMoney(player, property.RailRoadBuyPrice / 2);
+                    break;
+
+                case PropertyType.Utility:
+                    player.UtilityCount--;
+                    AddMoney(player, property.UtilityBuyPrice / 2);
+                    break;
             }
         }
+
+        //Đi thẳng vào tù
+        private void SendPlayerToJail(MatchState match, PlayerState player)
+        {
+            // Ô Jail mặc định index = 10
+            player.Position = 10;
+            player.InJail = true;
+        }
+
+        //Trả tiền thuế
+        private void HandleTax(MatchState match, PlayerState player, int tileIndex)
+        {
+            var tile = ServerState.Board[tileIndex];
+
+            if (tile is TaxTile taxTile)
+            {
+                DeductMoney(player, taxTile.taxAmount);
+                HandleBankrupt(match, player);
+            }
+        }
+
+        //Xử lý lá bài cơ hội
+        private void HandleChance(MatchState match, PlayerState player)
+        {
+            _cardService.DrawChanceCard(match, player, ServerState.chanceDeck);
+        }
+
+
+        //Xử lý lá bài Khí vận
+        private void HandleCommunityChest(MatchState match, PlayerState player)
+        {
+            _cardService.DrawCommunityChestCard(match, player, ServerState.communityChestDeck);
+        }
+
 
         //Bán thẻ ra khỏi tù
         public bool SellGetOutOfJailCard(PlayerState player)
@@ -312,5 +386,50 @@ namespace Server.Domain.GameLogic
                 match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
             } while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
         }
+
+        public PropertyState? ConvertTiletoPropertyState(Tile tile, int tileIndex)
+        {
+            if (tile is PropertyTile p)
+            {
+                return new PropertyState
+                {
+                    TileIndex = tileIndex,
+                    type = PropertyType.Property,
+
+                    landPrice = p.landPrice,
+                    housePrice = p.housePrice,
+                    hotelPrice = p.hotelPrice,
+                    rentPrice = p.rentPrice.ToArray()
+                };
+            }
+
+            if (tile is RailRoadTile r)
+            {
+                return new PropertyState
+                {
+                    TileIndex = tileIndex,
+                    type = PropertyType.RailRoad,
+
+                    RailRoadBuyPrice = r.buyPrice,
+                    RailRoadSellPrice = r.sellPrice
+                };
+            }
+
+            if (tile is UtilityTile u)
+            {
+                return new PropertyState
+                {
+                    TileIndex = tileIndex,
+                    type = PropertyType.Utility,
+
+                    UtilityBuyPrice = u.buyPrice,
+                    UtilitySellPrice = u.sellPrice
+                };
+            }
+
+            // Không phải ô mua được
+            return null;
+        }
+
     }
 }

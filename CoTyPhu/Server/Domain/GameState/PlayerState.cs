@@ -11,7 +11,6 @@ namespace Server.Domain.GameState
         public int AccountId { get; set; }
 
         public int PlayerId { get; set; }
-        public int AccountId { get; set; }
 
         //Chọn nhân vật
         public int CharacterIndex { get; set; }

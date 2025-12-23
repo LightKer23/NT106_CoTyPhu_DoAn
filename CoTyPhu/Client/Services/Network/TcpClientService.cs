@@ -135,48 +135,44 @@ namespace Client.Services.Network
                 new { },
                 matchId: matchId, playerId: playerId, ct: ct);
 
-        // ================== GAME (giữ như bạn đang dùng) ==================
-        public Task<DiceRolledEvent> RollDiceAsync(int matchId, int playerId, CancellationToken ct = default)
-            => RequestAsync<object, DiceRolledEvent>(
+        // ================== GAME ==================
+        public Task<object> RollDiceAsync(int matchId, int playerId, CancellationToken ct = default)
+            => RequestAsync<RollDiceRequest, object>(
                 MessageType.RollDiceRequest,
-                MessageType.DiceRolledEvent,
-                new { },
-                matchId, playerId, ct);
+                MessageType.DiceRolledEvent,   // server của bạn đang trả DiceRolledEvent {Success=true} (tạm)
+                new RollDiceRequest { MatchId = matchId, PlayerId = playerId },
+                matchId: matchId,
+                playerId: playerId,
+                ct: ct);
 
-        public Task<MoneyChangedEvent> BuyDecisionAsync(int matchId, int playerId, int propertyId, bool accept, CancellationToken ct = default)
-            => RequestAsync<BuyDecisionRequest, MoneyChangedEvent>(
-                MessageType.BuyDecisionRequest,
-                MessageType.MoneyChangedEvent,
-                new BuyDecisionRequest { PropertyID = propertyId, Accept = accept },
-                matchId, playerId, ct);
+        public Task EndTurnAsync(int matchId, int playerId)
+        {
+            var env = new MessageEnvelope
+            {
+                MessageId = Guid.NewGuid(),
+                Type = MessageType.EndTurnRequest,
+                MatchId = matchId,
+                PlayerId = playerId,
+                Payload = "{}"
+            };
 
-        public Task<PlayerReleasedFromJailEvent> GetOutOfJailAsync(int matchId, int playerId, string method, CancellationToken ct = default)
-            => RequestAsync<GetOutOfJailRequest, PlayerReleasedFromJailEvent>(
-                MessageType.GetOutOfJailRequest,
-                MessageType.PlayerReleasedFromJailEvent,
-                new GetOutOfJailRequest { Method = method },
-                matchId, playerId, ct);
+            return SendEnvelopeAsync(env);
+        }
 
-        public Task<MoneyChangedEvent> UpgradePropertyAsync(int matchId, int playerId, int propertyId, CancellationToken ct = default)
-            => RequestAsync<UpgradePropertyRequest, MoneyChangedEvent>(
-                MessageType.UpgradePropertyRequest,
-                MessageType.MoneyChangedEvent,
-                new UpgradePropertyRequest { PropertyId = propertyId },
-                matchId, playerId, ct);
 
-        public Task<TurnResultEvent> EndTurnAsync(int matchId, int playerId, CancellationToken ct = default)
-            => RequestAsync<object, TurnResultEvent>(
-                MessageType.EndTurnRequest,
-                MessageType.TurnResultEvent,
-                new { },
-                matchId, playerId, ct);
+        public Task<object> BuyDecisionAsync(int matchId, int playerId, int tileIndex, bool accept, CancellationToken ct = default)
+        => RequestAsync<BuyDecisionRequest, object>(
+            MessageType.BuyDecisionRequest,
+            MessageType.PropertyUpdatedEvent,   
+            new BuyDecisionRequest
+            {
+                PropertyID = tileIndex,
+                Accept = accept
+             },
+            matchId: matchId,
+            playerId: playerId,
+            ct: ct);
 
-        public Task<MoneyChangedEvent> SellPropertyAsync(int matchId, int playerId, int propertyId, CancellationToken ct = default)
-            => RequestAsync<SellPropertyRequest, MoneyChangedEvent>(
-                MessageType.SellPropertyRequest,
-                MessageType.MoneyChangedEvent,
-                new SellPropertyRequest { PropertyId = propertyId },
-                matchId, playerId, ct);
 
         // ================== CORE REQUEST ==================
         public async Task<TResp> RequestAsync<TReq, TResp>(
@@ -186,7 +182,7 @@ namespace Client.Services.Network
             int? matchId,
             int? playerId,
             CancellationToken ct = default)
-        {
+            {
             EnsureConnected();
 
             var env = new MessageEnvelope
@@ -338,5 +334,30 @@ namespace Client.Services.Network
             }
             return buf;
         }
+
+
+        //private void HandleServerEvent(MessageEnvelope env)
+        //{
+        //    switch (env.Type)
+        //    {
+        //        case MessageType.AskBuyPropertyEvent:
+                    
+
+        //        case MessageType.PlayerMovedEvent:
+                    
+
+        //        case MessageType.TurnResultEvent:
+
+
+        //            Send(new BuyDecisionRequest
+        //            {
+        //                MatchId = ask.MatchId,
+        //                PlayerId = ask.PlayerId,
+        //                Accepted = ok
+        //            });
+        //            break;
+        //    }
+        //}
+
     }
 }

@@ -22,5 +22,9 @@ namespace Server.Domain
 
         public static ClientConnection? CurrentConnection { get; set; }
 
+        public static List<Card> chanceDeck { get; set; } = ChanceDeckLoader.LoadDefaultDeck();
+
+        public static List<Card> communityChestDeck { get; set; } = CommunityChestDeckLoader.LoadDefaultDeck();
+
     }
 }
