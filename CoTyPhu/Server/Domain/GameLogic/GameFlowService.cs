@@ -16,26 +16,40 @@ namespace Server.Domain.GameLogic
             return player.Position;
         }
 
-        //Xử lý ô đất
-        public PropertyType HandleProperty(MatchState match, PlayerState player, PropertyState property)
+        //Trả về loại đất
+        public PropertyType? GetTilePropertyKind(MatchState match, PlayerState player)
         {
-            // Chưa có chủ → hỏi mua
-            if (property.PlayerOwnerId == null)
-            {
-                match.WaitingForBuyDecision = true;
-                match.PendingTileIndex = property.TileIndex;
-                return property.type;
-            }
+            int tileIndex = player.Position;
 
-            // Đất của người khác → trả tiền thuê
-            if (property.PlayerOwnerId != player.PlayerId)
-            {
-                PayRent(match, player, property);
-                return property.type;
-            }
+            // Không phải ô tài sản
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return null;
 
-            // Đất của mình → không làm gì
+            // Trả về đúng enum sẵn có
             return property.type;
+        }
+
+        //Kiểm tra đã có chủ chưa
+        public bool HasOwner(PropertyState property)
+        {
+            return property.PlayerOwnerId != null;
+        }
+
+        public bool HandleOwnedProperty(MatchState match, PlayerState player)
+        {
+            int tileIndex = player.Position;
+            
+            //Kiểm tra có phải ô đất không
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
+                return true;
+
+            //Ô đất của mình, không làm gì
+            if (property.PlayerOwnerId == player.PlayerId)
+                return true;
+
+            //Ô của người khác thì trả tiền thuê
+            PayRent(match, player, property);
+            return false;
         }
 
         //Mua đất
@@ -81,7 +95,28 @@ namespace Server.Domain.GameLogic
             }
         }
 
+        //Xử lý khi người chơi dừng ở một ô đất
+        public void HandlePlayerLanded(MatchState match, PlayerState player)
+        {
+            int tileIndex = player.Position;
 
+            //Kiểm tra có phải ô tài sản không
+            var propertyType = GetTilePropertyKind(match, player);
+            if (propertyType == null) return;
+
+            var property = match.Properties[tileIndex];
+
+            //Nếu đã có chủ, xử lý trả tiền thuê
+            bool noRentPaid = HandleOwnedProperty(match, player);
+            if (!noRentPaid) return;
+
+            // 3. Nếu chưa có chủ → hỏi mua
+            if (!HasOwner(property))
+            {
+                match.WaitingForBuyDecision = true;
+                match.PendingTileIndex = tileIndex;
+            }
+        }
 
         //Tính tiền thuê
         private int GetRentPrice(PlayerState player, PropertyState property)

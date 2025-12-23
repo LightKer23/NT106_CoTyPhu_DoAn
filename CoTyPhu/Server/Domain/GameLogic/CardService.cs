@@ -99,9 +99,7 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             // xử lý ô vừa đến
-                            Tile tile = match.Board[player.Position];
-                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
-                            flowService.HandleProperty(match, player, newTile);
+                            flowService.HandlePlayerLanded(match, player);
 
                             break;
                         }
@@ -122,9 +120,7 @@ namespace Server.Domain.GameLogic
                             player.Position = newPos;
 
                             // xử lý ô vừa đến
-                            Tile tile = match.Board[player.Position];
-                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
-                            flowService.HandleProperty(match, player, newTile);
+                            flowService.HandlePlayerLanded(match, player);
 
                             break;
                         }
@@ -173,7 +169,7 @@ namespace Server.Domain.GameLogic
                             }
                             else
                             {
-                                flowService.HandleProperty(match, player, newTile);
+                                flowService.HandlePlayerLanded(match, player);
                             }
 
                             break;
@@ -217,7 +213,7 @@ namespace Server.Domain.GameLogic
                             }
                             else
                             {
-                                flowService.HandleProperty(match, player, newTile);
+                                flowService.HandlePlayerLanded(match, player);
                             }
 
                             break;
@@ -308,9 +304,7 @@ namespace Server.Domain.GameLogic
                             // cập nhật vị trí
                             player.Position = newPos;
 
-                            Tile tile = match.Board[player.Position];
-                            PropertyState newTile = flowService.ConvertTiletoPropertyState(tile, player.Position);
-                            flowService.HandleProperty(match, player, newTile);
+                            flowService.HandlePlayerLanded(match, player);
 
                             break;
                         }
