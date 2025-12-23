@@ -10,6 +10,7 @@ namespace Server.Domain.GameLogic
 {
     public class GameFlowService
     {
+        CardService cardService = new CardService();
         //Lấy vị trí ô đất hiện tại của người chơi
         public int GetCurrentTileIndex(PlayerState player)
         {
@@ -95,28 +96,83 @@ namespace Server.Domain.GameLogic
             }
         }
 
-        //Xử lý khi người chơi dừng ở một ô đất
+        //Xử lý khi người chơi dừng ở một ô
         public void HandlePlayerLanded(MatchState match, PlayerState player)
         {
             int tileIndex = player.Position;
 
-            //Kiểm tra có phải ô tài sản không
-            var propertyType = GetTilePropertyKind(match, player);
-            if (propertyType == null) return;
+            // 1. Lấy loại ô (tĩnh)
+            TileType tileType = ServerState.Board[tileIndex].type;
 
+            switch (tileType)
+            {
+                case TileType.Start:
+                    {
+                        // Không làm gì khi chỉ "đứng" vào Start
+                        return;
+                    }
+                    
+
+                case TileType.GoToJail:
+                    {
+                        SendPlayerToJail(match, player);
+                        return;
+                    }
+                    
+
+                case TileType.Tax:
+                    {
+                        HandleTax(match, player, tileIndex);
+                        return;
+                    }
+                    
+
+                case TileType.Chance:
+                    {
+                        HandleChance(match, player);
+                        return;
+                    }
+                    
+
+                case TileType.CommunityChest:
+                    {
+                        HandleCommunityChest(match, player);
+                        return;
+                    }
+                    
+
+                case TileType.Property:
+                case TileType.Railroad:
+                case TileType.Utility:
+                    {
+                        HandlePropertyTile(match, player, tileIndex);
+                        return;
+                    }
+                    
+
+                default:
+                    return;
+            }
+        }
+
+        //Xử lý ô đất
+        private void HandlePropertyTile(MatchState match, PlayerState player, int tileIndex)
+        {
             var property = match.Properties[tileIndex];
 
-            //Nếu đã có chủ, xử lý trả tiền thuê
+            // Đã có chủ → trả tiền thuê (hoặc không)
             bool noRentPaid = HandleOwnedProperty(match, player);
-            if (!noRentPaid) return;
+            if (!noRentPaid)
+                return;
 
-            // 3. Nếu chưa có chủ → hỏi mua
+            // Chưa có chủ → hỏi mua
             if (!HasOwner(property))
             {
                 match.WaitingForBuyDecision = true;
                 match.PendingTileIndex = tileIndex;
             }
         }
+
 
         //Tính tiền thuê
         private int GetRentPrice(PlayerState player, PropertyState property)
@@ -221,6 +277,39 @@ namespace Server.Domain.GameLogic
                     AddMoney(player, property.UtilityBuyPrice / 2);
                     break;
             }
+        }
+
+        //Đi thẳng vào tù
+        private void SendPlayerToJail(MatchState match, PlayerState player)
+        {
+            // Ô Jail mặc định index = 10
+            player.Position = 10;
+            player.InJail = true;
+        }
+
+        //Trả tiền thuế
+        private void HandleTax(MatchState match, PlayerState player, int tileIndex)
+        {
+            var tile = ServerState.Board[tileIndex];
+
+            if (tile is TaxTile taxTile)
+            {
+                DeductMoney(player, taxTile.taxAmount);
+                HandleBankrupt(match, player);
+            }
+        }
+
+        //Xử lý lá bài cơ hội
+        private void HandleChance(MatchState match, PlayerState player)
+        {
+            cardService.DrawChanceCard(match, player, ServerState.chanceDeck);
+        }
+
+
+        //Xử lý lá bài Khí vận
+        private void HandleCommunityChest(MatchState match, PlayerState player)
+        {
+            cardService.DrawCommunityChestCard(match, player, ServerState.communityChestDeck);
         }
 
 
