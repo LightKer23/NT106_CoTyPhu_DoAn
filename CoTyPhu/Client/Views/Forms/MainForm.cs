@@ -17,8 +17,19 @@ namespace Client.Views.Forms
         private Dictionary<int, PictureBox> _tileMap;           
         private Dictionary<int, Panel> _tileTokenPanels;         
         private Dictionary<int, PictureBox> _playerTokens;      
-        private Dictionary<int, int> _playerTile;                
+        private Dictionary<int, int> _playerTile;
 
+        // ✅ ANIMATION STATE
+        private bool _isRollingDice = false;
+        private System.Windows.Forms.Timer _diceAnimationTimer;
+        private Random _random = new Random();
+        private int _animationTicks = 0;
+        
+        // ✅ LƯU KẾT QUẢ XÚC XẮC TỪ SERVER
+        private int _finalDice1 = 0;
+        private int _finalDice2 = 0;
+        private int _currentPlayerId = 0;
+        
         private const int TokenAreaW = 70;
         private const int TokenAreaH = 84;
 
@@ -47,7 +58,80 @@ namespace Client.Views.Forms
             btnEndTurn.Enabled = false;
             btnBuy.Visible = false;
             btnUpgrade.Visible = false;
+
+            // ✅ KHỞI TẠO TIMER CHO ANIMATION XÚC XẮC
+            _diceAnimationTimer = new System.Windows.Forms.Timer();
+            _diceAnimationTimer.Interval = 100; // 100ms mỗi frame
+            _diceAnimationTimer.Tick += DiceAnimationTimer_Tick;
+
+            // ✅ THIẾT LẬP HÌNH ẢNH XÚC XẮC BAN ĐẦU
+            pbDie1.SizeMode = PictureBoxSizeMode.CenterImage;
+            pbDie2.SizeMode = PictureBoxSizeMode.CenterImage;
+            pbDie1.BackColor = Color.White;
+            pbDie2.BackColor = Color.White;
+            pbDie1.BorderStyle = BorderStyle.FixedSingle;
+            pbDie2.BorderStyle = BorderStyle.FixedSingle;
+            
             this.Shown += async (_, __) => await InitTokensFromRoomAsync();
+        }
+
+        // ✅ XỬ LÝ ANIMATION XÚC XẮC (TỰ ĐỘNG HIỂN THỊ KẾT QUẢ KHI HẾT THỜI GIAN)
+        private void DiceAnimationTimer_Tick(object sender, EventArgs e)
+        {
+            _animationTicks++;
+            
+            if (_animationTicks < 15)
+            {
+                // Hiển thị số ngẫu nhiên trong 1.5 giây (15 ticks)
+                ShowRandomDiceFaces();
+            }
+            else
+            {
+                // ✅ DỪNG ANIMATION VÀ HIỂN THỊ KẾT QUẢ CUỐI CÙNG
+                _diceAnimationTimer.Stop();
+                _isRollingDice = false;
+                _animationTicks = 0;
+                
+                // Hiển thị kết quả thật từ server
+                ShowDiceValue(pbDie1, _finalDice1);
+                ShowDiceValue(pbDie2, _finalDice2);
+                
+                lbHistory.Items.Add($"Player {_currentPlayerId} tung được {_finalDice1} và {_finalDice2}");
+                
+                // ✅ DI CHUYỂN TOKEN SAU KHI HIỂN THỊ KẾT QUẢ
+                if (_playerTile.TryGetValue(_currentPlayerId, out int fromTile))
+                {
+                    int steps = _finalDice1 + _finalDice2;
+                    int toTile = (fromTile + steps) % 40;
+                    _ = AnimateTokenMovement(_currentPlayerId, fromTile, toTile, steps);
+                }
+            }
+        }
+
+        // ✅ HIỂN THỊ SỐ NGẪU NHIÊN TRÊN XÚC XẮC
+        private void ShowRandomDiceFaces()
+        {
+            int random1 = _random.Next(1, 7);
+            int random2 = _random.Next(1, 7);
+            
+            ShowDiceValue(pbDie1, random1);
+            ShowDiceValue(pbDie2, random2);
+        }
+
+        // ✅ HIỂN THỊ GIÁ TRỊ CỤ THỂ TRÊN XÚC XẮC
+        private void ShowDiceValue(PictureBox pb, int value)
+        {
+            // ✅ SỬ DỤNG HÌNH ẢNH TỪ RESOURCES
+            pb.Image = value switch
+            {
+                1 => Properties.Resources.num_1,
+                2 => Properties.Resources.num_2,
+                3 => Properties.Resources.num_3,
+                4 => Properties.Resources.num_4,
+                5 => Properties.Resources.num_5,
+                6 => Properties.Resources.num_6,
+                _ => null
+            };
         }
 
         private async Task InitTokensFromRoomAsync()
@@ -111,7 +195,10 @@ namespace Client.Views.Forms
 
         private async void BtnRollDice_Click(object? sender, EventArgs e)
         {
-            //btnRollDice.Enabled = false;
+            // ✅ VÔ HIỆU HÓA NÚT KHI ĐANG ANIMATION
+            if (_isRollingDice) return;
+            
+            btnRollDice.Enabled = false;
 
             await ClientSession.Tcp.RollDiceAsync(
                 ClientSession.MatchID,
@@ -148,7 +235,6 @@ namespace Client.Views.Forms
             PropertyNameCaseInsensitive = true
         };
 
-
         private async void BtnEndTurn_Click(object sender, EventArgs e)
         {
             btnBuy.Enabled = false;
@@ -159,6 +245,7 @@ namespace Client.Views.Forms
                 ClientSession.PlayerID
             );
         }
+        
         private Dictionary<int, Panel> BuildTokenAreas(Dictionary<int, PictureBox> tiles)
         {
             var dict = new Dictionary<int, Panel>();
@@ -237,24 +324,101 @@ namespace Client.Views.Forms
             token.Location = TokenSlots[slotIndex];
             tokenPanel.Controls.Add(token);
             token.BringToFront();
+            
+            // ✅ CẬP NHẬT VỊ TRÍ TOKEN
+            _playerTile[playerId] = tileIndex;
         }
 
+        // ✅ DI CHUYỂN TOKEN VỚI ANIMATION
+        private async Task AnimateTokenMovement(int playerId, int fromTile, int toTile, int steps)
+        {
+            if (!_playerTokens.ContainsKey(playerId))
+                return;
+
+            int currentTile = fromTile;
+            
+            for (int i = 0; i < steps; i++)
+            {
+                currentTile = (currentTile + 1) % 40;
+                
+                // Tìm slot trống cho token
+                int slot = FindAvailableSlot(currentTile, playerId);
+                PlaceTokenOnTile(playerId, currentTile, slot);
+                
+                // Delay giữa mỗi bước
+                await Task.Delay(200);
+            }
+        }
+
+        // ✅ TÌM SLOT TRỐNG TRONG Ô
+        private int FindAvailableSlot(int tileIndex, int currentPlayerId)
+        {
+            if (!_tileTokenPanels.TryGetValue(tileIndex, out var panel))
+                return 0;
+
+            var occupiedSlots = new HashSet<int>();
+
+            foreach (var kvp in _playerTokens)
+            {
+                int pid = kvp.Key;
+                var token = kvp.Value;
+                
+                // Bỏ qua token đang di chuyển
+                if (pid == currentPlayerId)
+                    continue;
+                
+                // Kiểm tra token có nằm trong panel này không
+                if (token.Parent == panel)
+                {
+                    for (int i = 0; i < TokenSlots.Length; i++)
+                    {
+                        if (token.Location == TokenSlots[i])
+                        {
+                            occupiedSlots.Add(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Trả về slot đầu tiên còn trống
+            for (int i = 0; i < TokenSlots.Length; i++)
+            {
+                if (!occupiedSlots.Contains(i))
+                    return i;
+            }
+
+            return 0;
+        }
 
         private void HandleServerEvent(MessageEnvelope env)
         {
-
-            var data = JsonSerializer.Deserialize<AskBuyPropertyEvent>(env.Payload, JsonOpt);
             Invoke(() =>
             {
                 switch (env.Type)
                 {
-
+                    // ✅ XỬ LÝ KẾT QUẢ DI CHUYỂN (TẤT CẢ CLIENT ĐỒNG BỘ)
                     case MessageType.PlayerMovedEvent:
-                        lbHistory.Items.Add("Player di chuyển");
-                        break;
+                        {
+                            var data = JsonSerializer.Deserialize<PlayerMoveEvent>(env.Payload, JsonOpt);
+                            
+                            // ✅ LƯU KẾT QUẢ VÀ BẮT ĐẦU ANIMATION
+                            _finalDice1 = data.Roll1;
+                            _finalDice2 = data.Roll2;
+                            _currentPlayerId = data.PlayerId;
+                            
+                            lbHistory.Items.Add($"Player {data.PlayerId} đang tung xúc xắc...");
+                            
+                            // ✅ BẮT ĐẦU ANIMATION (Timer sẽ tự động hiển thị kết quả sau 1.5s)
+                            _isRollingDice = true;
+                            _animationTicks = 0;
+                            _diceAnimationTimer.Start();
+                            break;
+                        }
 
                     case MessageType.AskBuyPropertyEvent:
                         {
+                            var data = JsonSerializer.Deserialize<AskBuyPropertyEvent>(env.Payload, JsonOpt);
                             if (data.IsAuction == false)
                             {
                                 lbHistory.Items.Add($"Server hỏi mua đất {data.Name} : {data.TileIndex} : {data.Price}");
@@ -267,8 +431,6 @@ namespace Client.Views.Forms
                                 btnUpgrade.Visible = true;
                                 break;
                             }
-
-
                         }
 
                     case MessageType.PropertyUpdatedEvent:
@@ -277,12 +439,14 @@ namespace Client.Views.Forms
                         break;
 
                     case MessageType.PlayerLeftEvent:
-                        lbHistory.Items.Add("Đổi lượt chơi");
+                        {
+                            var data = JsonSerializer.Deserialize<PlayerLeftEvent>(env.Payload, JsonOpt);
+                            lbHistory.Items.Add($"Đến lượt Player {data.PlayerId}");
 
-                        btnRollDice.Enabled =
-                            env.Payload.Contains(ClientSession.PlayerID.ToString());
-
-                        break;
+                            // ✅ BẬT/TẮT NÚT TUNG XÚC XẮC
+                            btnRollDice.Enabled = (data.PlayerId == ClientSession.PlayerID);
+                            break;
+                        }
                 }
             });
         }
