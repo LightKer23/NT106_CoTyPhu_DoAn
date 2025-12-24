@@ -8,6 +8,7 @@ using Common.Domain.Models.Entities;
 using Server.Domain;
 using Server.Domain.GameLogic;
 using Server.Domain.GameState;
+using Server.Domain.GameState.Board;
 using Server.Infrastructure.Database.Connection;
 using Server.Infrastructure.Database.Repository;
 using Server.Infrastructure.Network;
@@ -67,6 +68,21 @@ namespace Server.Infrastructure.Network
             p.InJail = true;
             p.Position = JailTileIndex;
             SetStreak(match, p, 0);
+        }
+
+        private Card DrawChanceCard(MatchState match)
+        {
+            if (match.ChanceDeck.Count == 0)
+                match.ChanceDeck = ChanceDeckLoader.LoadDefaultDeck();
+
+            var card = match.ChanceDeck[0];
+            match.ChanceDeck.RemoveAt(0);
+
+            if (card.ChanceType != ChanceCardType.GetOutOfJailFree)
+                match.ChanceDeck.Add(card);
+
+
+            return card;
         }
 
         public ServerDispatcher()
@@ -594,6 +610,136 @@ namespace Server.Infrastructure.Network
                 req.PlayerId
             );
         }
+
+        private void HandleChanceCard(MatchState match, PlayerState player)
+        {
+            var card = DrawChanceCard(match);
+
+            switch (card.ChanceType)
+            {
+                case ChanceCardType.GetOutOfJailFree:
+                    player.hasGetOutOfJailCard = true;
+                    break;
+
+                case ChanceCardType.StreetRepairs:
+                    {
+                        int cost = 0;
+                        foreach (var prop in match.Properties.Values)
+                        {
+                            if (prop.PlayerOwnerId == player.PlayerId)
+                            {
+                                cost += prop.houseCount * 40;
+                                if (prop.hasHotel) cost += 115;
+                            }
+                        }
+                        player.Money -= cost;
+                        break;
+                    }
+
+                case ChanceCardType.PayMoney:
+                    player.Money -= card.Amount;
+                    break;
+
+                case ChanceCardType.EarnMoney:
+                    player.Money += card.Amount;
+                    break;
+
+                case ChanceCardType.PayEachPlayer:
+                    {
+                        foreach (var other in match.Players.Values)
+                        {
+                            if (other.PlayerId == player.PlayerId || other.IsBankrupt) continue;
+                            player.Money -= card.Amount;
+                            other.Money += card.Amount;
+                        }
+                        break;
+                    }
+
+                case ChanceCardType.MoveBackSpaces:
+                    {
+                        int to = (player.Position - card.MoveBackSteps + match.Board.Count) % match.Board.Count;
+                        player.Position = to;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, to, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.MoveToTile:
+                    {
+                        player.Position = card.MoveToTileIndex;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, card.MoveToTileIndex, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.MoveToNearestUtility:
+                    {
+                        int target = match.Properties
+                            .Where(p => p.Value.type == PropertyType.Utility)
+                            .Select(p => p.Key)
+                            .Where(idx => idx > player.Position)
+                            .DefaultIfEmpty(
+                                match.Properties
+                                    .Where(p => p.Value.type == PropertyType.Utility)
+                                    .Select(p => p.Key)
+                                    .Min()
+                            )
+                            .First();
+
+                        player.Position = target;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, target, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.MoveToNearestRailroad:
+                    {
+                        int target = match.Properties
+                            .Where(p => p.Value.type == PropertyType.RailRoad)
+                            .Select(p => p.Key)
+                            .Where(idx => idx > player.Position)
+                            .DefaultIfEmpty(
+                                match.Properties
+                                    .Where(p => p.Value.type == PropertyType.RailRoad)
+                                    .Select(p => p.Key)
+                                    .Min()
+                            )
+                            .First();
+
+                        player.Position = target;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, target, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.GoToJail:
+                    SendToJail(match, player);
+                    break;
+            }
+
+            AutoLiquidateToCoverDebt(match, player);
+        }
+
 
         private void AutoLiquidateToCoverDebt(MatchState match, PlayerState player)
         {
