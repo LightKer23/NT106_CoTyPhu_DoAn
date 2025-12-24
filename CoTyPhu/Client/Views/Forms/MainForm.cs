@@ -158,6 +158,7 @@ namespace Client.Views.Forms
                 ClientSession.MatchID,
                 ClientSession.PlayerID
             );
+        }
         private Dictionary<int, Panel> BuildTokenAreas(Dictionary<int, PictureBox> tiles)
         {
             var dict = new Dictionary<int, Panel>();
