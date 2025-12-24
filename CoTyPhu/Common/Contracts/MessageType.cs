@@ -45,6 +45,9 @@ namespace Common.Constracts
         RoomUpdatedEvent,
         RoomStateEvent,            // cập nhật danh sách player trong phòng
 
+        PlayerSurrenderRequest,
+        PlayerSurrenderEvent,
+
         // ===== GAME ACTION (Client → Server) =====
         RollDiceRequest,           // yêu cầu tung xúc xắc
 
