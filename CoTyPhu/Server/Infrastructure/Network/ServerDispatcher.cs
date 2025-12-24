@@ -127,7 +127,9 @@ namespace Server.Infrastructure.Network
 
                 MessageType.RollDiceRequest => Task.FromResult(HandleRollDice(req)),
                 MessageType.BuyDecisionRequest => Task.FromResult(HandleBuyDecision(req)),
-                MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)), 
+                MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)),
+                MessageType.PlayerSurrenderRequest => Task.FromResult(HandlePlayerSurrender(req)),
+
 
 
                 _ => Task.FromResult(MakeError("No handler for message type"))
@@ -446,7 +448,7 @@ namespace Server.Infrastructure.Network
             int dice2 = Random.Shared.Next(1, 7);
             bool isDouble = dice1 == dice2;
 
-            //dice1 = 1; dice2 = 1; // ĐANG TEST
+            dice1 = 2; dice2 = 2; // ĐANG TEST
 
             if (player.InJail)
             {
@@ -516,6 +518,8 @@ namespace Server.Infrastructure.Network
 
                 AutoLiquidateToCoverDebt(match, player);
 
+                Console.WriteLine($"Player {player.PlayerId} landed on tile {tileIndex} : {player.Money}");
+
                 if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
                 {
                     if (!match.Properties.TryGetValue(tileIndex, out var property))
@@ -569,6 +573,61 @@ namespace Server.Infrastructure.Network
             }
         }
 
+        private MessageEnvelope HandlePlayerSurrender(MessageEnvelope req)
+        {
+            int matchId = req.MatchId!.Value;
+            int playerId = req.PlayerId!.Value;
+
+            if (!ServerState.Matches.TryGetValue(matchId, out var match))
+                return MakeError("Match not found");
+
+            if (!match.Players.TryGetValue(playerId, out var player))
+                return MakeError("Player not found");
+
+            lock (GetMatchLock(matchId))
+            {
+                // 1️⃣ Đánh dấu thua
+                player.IsBankrupt = true;
+                player.Money = 0;
+
+                // 2️⃣ Nhả toàn bộ tài sản
+                foreach (var prop in match.Properties.Values)
+                {
+                    if (prop.PlayerOwnerId == playerId)
+                    {
+                        prop.PlayerOwnerId = null;
+                        prop.houseCount = 0;
+                        prop.hasHotel = false;
+                    }
+                }
+
+                // 3️⃣ Nếu đang là lượt của nó → chuyển lượt
+                if (match.CurrentTurnPlayerId == playerId)
+                {
+                    flow.NextTurn(match);
+                }
+            }
+
+            BroadcastRoom(
+                matchId,
+                Wrap(
+                    MessageType.PlayerSurrenderEvent,
+                    new PlayerSurrenderEvent { PlayerId = playerId },
+                    matchId,
+                    null
+                )
+            );
+
+            return Wrap(
+                MessageType.PlayerSurrenderEvent,
+                new PlayerSurrenderEvent { PlayerId = playerId },
+                matchId,
+                playerId
+            );
+        }
+
+
+
         private MessageEnvelope HandleBuyDecision(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<BuyDecisionRequest>(req.Payload, JsonOpt)!;
@@ -603,7 +662,16 @@ namespace Server.Infrastructure.Network
             match.PendingTileIndex = null;
 
             if (!bought)
-                return MakeError("Buy property failed");
+            {
+                    return Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new { PropertyTileIndex = -1 },
+                    match.MatchId,
+                    req.PlayerId
+                );
+            }
+
+            Console.WriteLine($"Player {player.PlayerId}: {player.Money}");
 
             BroadcastRoom(
                 match.MatchId,

@@ -383,9 +383,12 @@ namespace Server.Domain.GameLogic
 
             do
             {
-                match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
-            } while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
+                match.CurrentPlayerIndex =
+                    (match.CurrentPlayerIndex + 1) % totalPlayers;
+            }
+            while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
         }
+
 
         public PropertyState? ConvertTiletoPropertyState(Tile tile, int tileIndex)
         {

@@ -195,9 +195,7 @@ namespace Client.Views.Forms
 
         private async void BtnRollDice_Click(object? sender, EventArgs e)
         {
-            // ✅ VÔ HIỆU HÓA NÚT KHI ĐANG ANIMATION
-            if (_isRollingDice) return;
-            
+            btnEndTurn.Enabled = true;
             btnRollDice.Enabled = false;
 
             await ClientSession.Tcp.RollDiceAsync(
@@ -237,8 +235,10 @@ namespace Client.Views.Forms
 
         private async void BtnEndTurn_Click(object sender, EventArgs e)
         {
-            btnBuy.Enabled = false;
-            btnUpgrade.Enabled = false;
+            btnBuy.Visible = false;
+            btnUpgrade.Visible = false;
+
+            btnEndTurn.Enabled = false;
 
             await ClientSession.Tcp.EndTurnAsync(
                 ClientSession.MatchID,
@@ -433,10 +433,34 @@ namespace Client.Views.Forms
                             }
                         }
 
+
+                    case MessageType.PlayerSurrenderEvent:
+                        {
+                            var ev = JsonSerializer.Deserialize<PlayerSurrenderEvent>(env.Payload, JsonOpt);
+
+                            lbHistory.Items.Add($"Player {ev.PlayerId} đã chịu thua");
+
+                            if (ev.PlayerId == ClientSession.PlayerID)
+                            {
+                                MessageBox.Show("Bạn đã thua!");
+                            }
+
+                            break;
+                        }
+
+
                     case MessageType.PropertyUpdatedEvent:
-                        lbHistory.Items.Add("Property đã cập nhật");
-                        btnEndTurn.Enabled = true;
-                        break;
+                        {
+                            if (data.TileIndex == -1)
+                            {
+                                MessageBox.Show("Số tiền hiện tại không đủ!");
+                                btnEndTurn.Enabled = true;
+                                break;
+                            }    
+                            lbHistory.Items.Add("Property đã cập nhật");
+                            btnEndTurn.Enabled = true;
+                            break;
+                        }
 
                     case MessageType.PlayerLeftEvent:
                         {

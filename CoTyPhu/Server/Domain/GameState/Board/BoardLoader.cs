@@ -60,7 +60,28 @@ namespace Server.Domain.GameState.Board
                 new PropertyTile("Tan Ky Tan Quy", 400, 200, 200, new List<int>{50, 200, 600, 1400, 1700, 2000}, 200),
             };
 
+
             return board;
+        }
+
+
+        public class TaxTile : Tile
+        {
+            public TaxType taxType { get; }
+            public int taxAmount { get; }
+
+            public TaxTile(string name, TaxType type)
+                : base(name, TileType.Tax)
+            {
+                taxType = type;
+
+                taxAmount = type switch
+                {
+                    TaxType.Income => 200,   // Thuế thu nhập
+                    TaxType.Special => 100,   // Thuế đặc biệt
+                    _ => 0
+                };
+            }
         }
     }
 }
