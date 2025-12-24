@@ -15,6 +15,8 @@ namespace Server.Domain.GameState
         // PlayerId → PlayerState
         public Dictionary<int, PlayerState> Players { get; set; } = new();
         public Dictionary<int, PropertyState> Properties { get; set; } = new();
+        public List<Card> CommunityChestDeck { get; set; } = CommunityChestDeckLoader.LoadDefaultDeck();
+        public List<Card> ChanceDeck { get; set; } = ChanceDeckLoader.LoadDefaultDeck();
 
         // PlayerId đang tới lượt
         public int CurrentTurnPlayerId { get; set; }
@@ -34,6 +36,9 @@ namespace Server.Domain.GameState
         //Index ô Server đợi người chơi quyết định mua hay không
         public int? PendingTileIndex { get; set; }
 
+        public int NextChanceCardIndex { get; set; } = -1;
+        public int NextCommunityChestCardIndex { get; set; } = -1;
+
         public MatchState()
         {
             Properties = CreateInitialProperties();
@@ -46,6 +51,8 @@ namespace Server.Domain.GameState
             this.Players = players;
             this.Properties = properties;
             Properties = CreateInitialProperties();
+            CommunityChestDeck = CommunityChestDeck.OrderBy(_ => Guid.NewGuid()).ToList();
+            ChanceDeck = ChanceDeck.OrderBy(_ => Guid.NewGuid()).ToList();
         }
 
         public Dictionary<int, PropertyState> CreateInitialProperties()

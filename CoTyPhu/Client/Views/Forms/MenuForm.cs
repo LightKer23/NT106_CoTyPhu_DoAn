@@ -29,7 +29,9 @@ namespace Client.Views.Forms
 
         private void btnSetting_Click(object sender, EventArgs e)
         {
-            (new SettingForm()).Show();
+            var setting = new SettingForm();
+            setting.Owner = this;   
+            setting.ShowDialog();
         }
 
         private void btnGuide_Click(object sender, EventArgs e)

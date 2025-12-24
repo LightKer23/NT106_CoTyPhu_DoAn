@@ -21,7 +21,6 @@ namespace Server.Infrastructure.Network
         private readonly TcpListener _listener;
         private readonly IRequestDispatcher _dispatcher;
 
-        // ✅ Program chỉ tạo TcpServer(port) là được
         public TcpServer(int port)
         {
             _listener = new TcpListener(IPAddress.Any, port);

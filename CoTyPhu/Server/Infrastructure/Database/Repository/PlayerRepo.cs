@@ -1,258 +1,135 @@
-﻿using System;
+﻿using Common.Contracts.Auth;
+using Common.Domain.Models.Entities;
+using Server.Infrastructure.Database.Connection;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Windows;
-using Server.Infrastructure.Database.Connection;
-using Common.Domain.Models.Entities;
 
-namespace Server.Infrastructure.Database.Repository
+public class PlayerRepo
 {
-    public class PlayerRepo
+    private readonly DBConnection _db;
+    public PlayerRepo(DBConnection db) => _db = db;
+
+    // 1️ Join room
+    public void InsertPlayer(int matchId, int playerId, int accountId)
     {
-        private readonly DBConnection _db;
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-        public PlayerRepo(DBConnection db)
-        {
-            _db = db;
-        }
+        var cmd = new SqlCommand(@"
+        INSERT INTO Player (IDMatch, IDPlayer, IDAccount, Status)
+        VALUES (@mid, @pid, @acc, 'Waiting')", conn);
 
+        cmd.Parameters.AddWithValue("@mid", matchId);
+        cmd.Parameters.AddWithValue("@pid", playerId);
+        cmd.Parameters.AddWithValue("@acc", accountId);
 
-        // Thêm 1 Player trong trận đó khi chưa bắt đầu
-        public int InsertPlayer(int idMatch, int idAccount, int characterIndex)
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
-
-                var getNewIdCmd = new SqlCommand(@"
-            SELECT COUNT(*) + 1 
-            FROM Player 
-            WHERE IDMatch = @mid", conn);
-
-                getNewIdCmd.Parameters.AddWithValue("@mid", idMatch);
-                int newIdPlayer = (int)getNewIdCmd.ExecuteScalar();
-
-                var insertCmd = new SqlCommand(@"
-            INSERT INTO Player
-            (IDMatch, IDPlayer, IDAccount, Money, Position, StatusPlayer, CharacterIndex)
-            VALUES
-            (@mid, @pid, @acc, 1500, 0, 'Ready', @char)", conn);
-
-                insertCmd.Parameters.AddWithValue("@mid", idMatch);
-                insertCmd.Parameters.AddWithValue("@pid", newIdPlayer);
-                insertCmd.Parameters.AddWithValue("@acc", idAccount);
-                insertCmd.Parameters.AddWithValue("@char", characterIndex);
-
-                insertCmd.ExecuteNonQuery();
-                return newIdPlayer;
-            }
-            catch
-            {
-                return -1;
-            }
-        }
+        cmd.ExecuteNonQuery();
+    }
 
 
+    // 2️ Out khi chưa Playing
+    public void DeletePlayer(int matchId, int playerId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-        // Lấy thông tin của Player
-        public Common.Domain.Models.Entities.Player GetPlayer(int idMatch, int idPlayer)
+        var cmd = new SqlCommand(@"
+        DELETE FROM Player 
+        WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
 
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
+        cmd.Parameters.AddWithValue("@mid", matchId);
+        cmd.Parameters.AddWithValue("@pid", playerId);
 
-                var cmd = new SqlCommand(@"
-                    SELECT IDPlayer, IDMatch, IDAccount, Rank, Money, Position, StatusPlayer, CharacterIndex
-                    FROM Player 
-                    WHERE IDMatch=@mid AND IDPlayer=@pid",
-                    conn);
-
-                cmd.Parameters.AddWithValue("@mid", idMatch);
-                cmd.Parameters.AddWithValue("@pid", idPlayer);
-
-                using var rd = cmd.ExecuteReader();
-                if (rd.Read())
-                {
-                    return new Player
-                    {
-                        IDPlayer = rd.GetInt32(0),
-                        IDMatch = rd.GetInt32(1),
-                        IDAccount = rd.GetInt32(2),
-                        Rank = rd.IsDBNull(3) ? null : rd.GetInt32(3),
-                        Money = rd.GetInt32(4),
-                        Position = rd.GetInt32(5),
-                        StatusPlayer = rd.GetString(6),
-                        CharacterIndex = rd.GetInt32(7)
-                    };
-
-                }
-            }
-            catch { }
-
-            return null;
-        }
+        cmd.ExecuteNonQuery();
+    }
 
 
-        // Update sau khi xử lý logic trong RAM
-        public bool UpdateLogic(int idMatch, int idPlayer, int money, int position, string status)
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
+    // 3️ Set Playing khi start game
+    public void SetAllPlaying(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-                var cmd = new SqlCommand(@"
-                    UPDATE Player
-                    SET Money=@m, Position=@p, StatusPlayer=@s
-                    WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
+        var cmd = new SqlCommand(@"
+            UPDATE Player
+            SET Status='Playing'
+            WHERE IDMatch=@mid", conn);
 
-                cmd.Parameters.AddWithValue("@mid", idMatch);
-                cmd.Parameters.AddWithValue("@pid", idPlayer);
-                cmd.Parameters.AddWithValue("@m", money);
-                cmd.Parameters.AddWithValue("@p", position);
-                cmd.Parameters.AddWithValue("@s", status);
+        cmd.Parameters.AddWithValue("@mid", matchId);
+        cmd.ExecuteNonQuery();
+    }
 
-                return cmd.ExecuteNonQuery() > 0;
-            }
-            catch { return false; }
-        }
+    // 4️ Player kết thúc (Bankrupt / Crash)
+    public void EndPlayer(int playerId, string status, int rank)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-        public bool IsCharacterTaken(int matchId, int characterIndex)
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
+        var cmd = new SqlCommand(@"
+            UPDATE Player
+            SET Status=@st,
+                Rank=@rank,
+                CrashTime=GETDATE()
+            WHERE IDPlayer=@id", conn);
 
-            var cmd = new SqlCommand(@"
-        SELECT COUNT(*) 
-        FROM Player 
-        WHERE IDMatch = @mid AND CharacterIndex = @char", conn);
+        cmd.Parameters.AddWithValue("@st", status);
+        cmd.Parameters.AddWithValue("@rank", rank);
+        cmd.Parameters.AddWithValue("@id", playerId);
+        cmd.ExecuteNonQuery();
+    }
 
-            cmd.Parameters.AddWithValue("@mid", matchId);
-            cmd.Parameters.AddWithValue("@char", characterIndex);
+    // 5️ Đếm player còn chơi
+    public int CountAlive(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-            return (int)cmd.ExecuteScalar() > 0;
-        }
-
-
-        public bool DeletePlayer(int idMatch, int idPlayer)
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
-
-                var cmd = new SqlCommand(@"
-            DELETE FROM Player
-            WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
-
-                cmd.Parameters.AddWithValue("@mid", idMatch);
-                cmd.Parameters.AddWithValue("@pid", idPlayer);
-
-                return cmd.ExecuteNonQuery() > 0;
-            }
-            catch { return false; }
-        }
-
-
-        // Player bị crash
-        public bool SetCrash(int idMatch, int idPlayer)
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
-
-                var cmd = new SqlCommand(@"
-                    UPDATE Player
-                    SET StatusPlayer='Crash'
-                    WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
-
-                cmd.Parameters.AddWithValue("@mid", idMatch);
-                cmd.Parameters.AddWithValue("@pid", idPlayer);
-
-                return cmd.ExecuteNonQuery() > 0;
-            }
-            catch { return false; }
-        }
-
-
-        // Đếm số player còn sống trong match (không Bankrupt)
-        public int CountAlive(int idMatch)
-        {
-            try
-            {
-                using var conn = _db.GetConnection();
-                conn.Open();
-
-                var cmd = new SqlCommand(@"
-            SELECT COUNT(*) 
+        var cmd = new SqlCommand(@"
+            SELECT COUNT(*)
             FROM Player
-            WHERE IDMatch=@mid 
-            AND StatusPlayer NOT IN ('Bankrupt')", conn);
+            WHERE IDMatch=@mid AND Status='Playing'", conn);
 
-                cmd.Parameters.AddWithValue("@mid", idMatch);
+        cmd.Parameters.AddWithValue("@mid", matchId);
+        return (int)cmd.ExecuteScalar();
+    }
 
-                return (int)cmd.ExecuteScalar();
-            }
-            catch
-            {
-                return 0;
-            }
-        }
+    // 6 Hiển thị lịch sử đấu
+    public List<MatchHistoryItem> GetHistoryByAccount(int accountId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
+        var cmd = new SqlCommand(@"
+        SELECT 
+            m.IDMatch,
+            m.StartTime,
+            m.EndTime,
+            p.Rank,
+            p.Status
+        FROM Player p
+        JOIN Match m ON p.IDMatch = m.IDMatch
+        WHERE p.IDAccount = @acc AND m.Status = 'End'
+        ORDER BY m.StartTime DESC
+    ", conn);
 
-        // Player phá sản
-        public bool SetBankrupt(int idMatch, int idPlayer)
+        cmd.Parameters.AddWithValue("@acc", accountId);
+
+        var list = new List<MatchHistoryItem>();
+        using var rd = cmd.ExecuteReader();
+        while (rd.Read())
         {
-            try
+            list.Add(new MatchHistoryItem
             {
-                using var conn = _db.GetConnection();
-                conn.Open();
-
-                var cmd = new SqlCommand(@"
-                UPDATE Player
-                SET StatusPlayer='Bankrupt',
-                    CrashTime = GETDATE()
-                WHERE IDMatch=@mid AND IDPlayer=@pid", conn);
-
-                cmd.Parameters.AddWithValue("@mid", idMatch);
-                cmd.Parameters.AddWithValue("@pid", idPlayer);
-                cmd.ExecuteNonQuery();
-            }
-            catch { return false; }
-
-            try
-            {
-                var propertyRepo = new PropertyRepo(_db);
-                propertyRepo.ResetPlayerProperties(idMatch, idPlayer);
-            }
-            catch
-            { /* không ảnh hưởng phá sản, tiếp tục*/ }
-
-            try
-            {
-                var matchRepo = new MatchRepo(_db);
-
-                matchRepo.DecreasePlayerCount(idMatch);
-            }
-            catch { }
-
-            try
-            {
-                var matchRepo = new MatchRepo(_db);
-                var playerRepo = new PlayerRepo(_db);
-
-                int alive = playerRepo.CountAlive(idMatch);
-
-                if (alive == 1)
-                    matchRepo.EndMatch(idMatch);
-            }
-            catch { }
-
-            return true;
+                MatchId = rd.GetInt32(0),
+                StartTime = rd.GetDateTime(1),
+                EndTime = rd.IsDBNull(2) ? null : rd.GetDateTime(2),
+                Rank = rd.IsDBNull(3) ? null : rd.GetInt32(3),
+                Status = rd.GetString(4)
+            });
         }
+
+        return list;
     }
 }

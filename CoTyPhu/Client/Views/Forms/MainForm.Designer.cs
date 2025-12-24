@@ -830,6 +830,7 @@
             btnExit.TabIndex = 10;
             btnExit.Text = "Thoát";
             btnExit.UseVisualStyleBackColor = false;
+            btnExit.Click += btnExit_Click;
             // 
             // MainForm
             // 
@@ -846,6 +847,7 @@
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;
             Text = "Cờ tỷ phú";
+            FormClosing += MainForm_FormClosing;
             pnlInfoTile.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)pbTile).EndInit();
             pnlBoard.ResumeLayout(false);
