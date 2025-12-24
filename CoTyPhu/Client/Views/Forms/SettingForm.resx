@@ -121,7 +121,11 @@
   <data name="pnlMenu.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAABCoAAAMKCAIAAADMPDIlAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+<<<<<<< Updated upstream
         wAAADsABataJCQAA/7JJREFUeF7s/edzW9ee7vvef+NW3Re3zjm3TtU5++y9e/fu7t29Oq2cl3POOWdb
+=======
+        vQAADr0BR/uQrQAA/7JJREFUeF7s/edzW9ee7vvef+NW3Re3zjm3TtU5++y9e/fu7t29Oq2cl3POOWdb
+>>>>>>> Stashed changes
         zkmWLSvaVs4555woiWLOOYtREinJtmwLGRPQi/uMMQCIgmRbgQQB8Fv1KRYIghJJzDnm75kj/b+OnY8A
         AAAAQAYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPED
         AAAAQIYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPEDAAAAQIYQPwAAAABkCPED
@@ -2552,7 +2556,11 @@
   <data name="tabInfo.BackgroundImage" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAABCoAAAMKCAIAAADMPDIlAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAO
+<<<<<<< Updated upstream
         wAAADsABataJCQAA9iVJREFUeF7s/Qd0G2ee53vPOffcOzszd2d3dvbu7N387uzO3N2Zsbt7OtjdbVvO
+=======
+        vQAADr0BR/uQrQAA9iVJREFUeF7s/Qd0G2ee53vPOffcOzszd2d3dvbu7N387uzO3N2Zsbt7OtjdbVvO
+>>>>>>> Stashed changes
         buecc845yDm7nW05SrYsybIt5yRb0bJEUwyiKFGUSEqMYs4kQOQMvk+xoGLxj0AABECE73M+xxYrASgU
         wOfHesKfTE5O+oPBMaerc8waU49lYtjunHB7nD6/y+efcHtHHa5ei01s5vD61KFKpAxM2NXZiPxAmVnU
         RTLHq8IdCtc5fGUTHgAAABSZPxmyO43KojDicHkCgUiVMKpYXB6xvccfd+MiK3oNW8WwUDgcWUQ5UIKh

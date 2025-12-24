@@ -1,7 +1,9 @@
 ﻿using Client.Services.Network;
 using Common.Constracts;
-using System;
+using Common.Constracts.Room;
+using Common.Contracts.Room;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -10,6 +12,8 @@ namespace Client.Views.Forms
     public partial class RoomWaitingForm : Form
     {
         private System.Windows.Forms.Timer _reloadTimer;
+        private bool _isLeaving = false;
+
 
         private Dictionary<int, string> _charNames = new()
         {
@@ -25,6 +29,7 @@ namespace Client.Views.Forms
             lblRoomId.Text = $"ID: {idmatch}";
 
             this.Load += RoomWaitingForm_Load;
+
         }
 
 
@@ -32,7 +37,7 @@ namespace Client.Views.Forms
         private async void RoomWaitingForm_Load(object sender, EventArgs e)
         {
             lblRoomId.Text = $"ID: {ClientSession.MatchID}";
-            btnStart.Enabled = ClientSession.PlayerID == 1;
+            btnStart.Enabled = false;
 
             ClientSession.Tcp.OnEvent -= HandleServerEvent;
             ClientSession.Tcp.OnEvent += HandleServerEvent;
@@ -40,13 +45,8 @@ namespace Client.Views.Forms
             await ReloadPlayers();
         }
 
-        protected override void OnFormClosed(FormClosedEventArgs e)
-        {
-            base.OnFormClosed(e);
 
-            if (ClientSession.Tcp != null)
-                ClientSession.Tcp.OnEvent -= HandleServerEvent;
-        }
+
 
         private async Task ReloadPlayers()
         {
@@ -62,24 +62,50 @@ namespace Client.Views.Forms
                 lstPlayers.Items.Add($"{p.DisplayName} - {_charNames[p.CharacterIndex]}");
             }
 
-            btnStart.Enabled = ClientSession.PlayerID == 1;
         }
 
         private async void btnLeave_Click(object sender, EventArgs e)
         {
-            _reloadTimer?.Stop();
+            _isLeaving = true;
 
-            await ClientSession.Tcp.LeaveRoomAsync(
-                ClientSession.MatchID,
-                ClientSession.PlayerID
-            );
+            await LeaveRoomAndBack();
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            base.OnFormClosed(e);
+
+            if (_isLeaving) return;
+
+            // fire & forget – đúng chuẩn WinForms
+            _ = LeaveRoomAndBack();
+        }
+
+
+        private async Task LeaveRoomAndBack()
+        {
+            try
+            {
+                if (ClientSession.MatchID != 0 && ClientSession.PlayerID != 0)
+                {
+                    await ClientSession.Tcp.LeaveRoomAsync(
+                        ClientSession.MatchID,
+                        ClientSession.PlayerID
+                    );
+                }
+            }
+            catch { }
 
             ClientSession.MatchID = 0;
             ClientSession.PlayerID = 0;
 
+            ClientSession.Tcp.OnEvent -= HandleServerEvent;
+
             Hide();
             new RoomHubForm().Show();
         }
+
+
 
         private async void btnStart_Click(object sender, EventArgs e)
         {
@@ -91,16 +117,32 @@ namespace Client.Views.Forms
             MessageBox.Show("Bắt đầu game!");
         }
 
+        private int _currentHostPlayerId = 0;
+
+
         private void HandleServerEvent(MessageEnvelope env)
         {
             switch (env.Type)
             {
                 case MessageType.RoomUpdatedEvent:
-                    BeginInvoke(new Action(async () =>
                     {
-                        await ReloadPlayers();
-                    }));
-                    break;
+                        var ev = JsonSerializer.Deserialize<RoomUpdatedEvent>(
+                            env.Payload,
+                            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                        );
+                        if (ev == null) return;
+
+                        BeginInvoke(new Action(() =>
+                        {
+                            _currentHostPlayerId = ev.HostPlayerId;
+                            btnStart.Enabled = ClientSession.PlayerID == _currentHostPlayerId;
+                            _ = ReloadPlayers();
+                        }));
+
+                        break;
+                    }
+
+
 
                 case MessageType.StartMatchResponse:
                     BeginInvoke(new Action(() =>
@@ -120,6 +162,15 @@ namespace Client.Views.Forms
             var main = new MainForm(ClientSession.MatchID, ClientSession.PlayerID);
 
             main.Show();
+        }
+
+        public class MatchHistoryItem
+        {
+            public int MatchId { get; set; }
+            public DateTime StartTime { get; set; }
+            public DateTime? EndTime { get; set; }
+            public int? Rank { get; set; }
+            public string Status { get; set; }   // Win / Lose / Bankrupt
         }
     }
 }

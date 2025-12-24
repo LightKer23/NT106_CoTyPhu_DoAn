@@ -35,7 +35,6 @@ namespace Client.Services.Network
         // Nếu muốn đổi timeout, set property này
         public TimeSpan RequestTimeout { get; set; } = TimeSpan.FromSeconds(12);
 
-        // ================== CONNECT ==================
         public async Task ConnectAsync(string host, int port, CancellationToken ct = default)
         {
             if (IsConnected) return;
@@ -52,7 +51,6 @@ namespace Client.Services.Network
             if (!IsConnected) throw new InvalidOperationException("Client chưa ConnectAsync()");
         }
 
-        // ================== AUTH ==================
         public Task<LoginResponse> LoginAsync(string username, string password, CancellationToken ct = default)
             => RequestAsync<LoginRequest, LoginResponse>(
                 MessageType.LoginRequest,
@@ -87,6 +85,16 @@ namespace Client.Services.Network
                 MessageType.ResetPasswordResponse,
                 new ResetPasswordRequest { Email = email, NewPassword = newPassword },
                 matchId: null, playerId: null, ct: ct);
+
+        public Task<GetMatchHistoryResponse> GetMatchHistoryAsync(int accountId, CancellationToken ct = default)
+            => RequestAsync<GetMatchHistoryRequest, GetMatchHistoryResponse>(
+                MessageType.GetMatchHistoryRequest,
+                MessageType.GetMatchHistoryResponse,
+                new GetMatchHistoryRequest { AccountId = accountId },
+                matchId: null, playerId: null, ct: ct);
+
+
+
 
         // ================== ROOM (CHUẨN FLOW) ==================
 
@@ -158,6 +166,21 @@ namespace Client.Services.Network
 
             return SendEnvelopeAsync(env);
         }
+
+        public Task PlayerSurrenderAsync(int matchId, int playerId)
+        {
+            return SendEnvelopeAsync(new MessageEnvelope
+            {
+                MessageId = Guid.NewGuid(),
+                Type = MessageType.PlayerSurrenderRequest,
+                MatchId = matchId,
+                PlayerId = playerId,
+                Payload = JsonSerializer.Serialize(new PlayerSurrenderRequest
+                { }
+                )
+            });
+        }
+
 
 
         public Task<object> BuyDecisionAsync(int matchId, int playerId, int tileIndex, bool accept, CancellationToken ct = default)

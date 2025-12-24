@@ -64,6 +64,7 @@ namespace Client.Views.Forms
             btnEndTurn.Click += BtnEndTurn_Click;
             btnBuy.Click += BtnBuy_Click;
             btnUpgrade.Click += BtnUpgrade_Click;
+<<<<<<< Updated upstream
             btnSend.Click += BtnSend_Click;
 
             textBox2.KeyDown += (s, e) =>
@@ -74,6 +75,10 @@ namespace Client.Views.Forms
                     BtnSend_Click(s, e);
                 }
             };
+=======
+            this.FormClosing += MainForm_FormClosing;
+
+>>>>>>> Stashed changes
 
             btnEndTurn.Enabled = false;
             btnBuy.Visible = false;
@@ -416,6 +421,35 @@ namespace Client.Views.Forms
             }
         }
 
+<<<<<<< Updated upstream
+=======
+        private bool _surrenderSent = false;
+
+        private async void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            // Nếu đã gửi rồi thì thôi
+            if (_surrenderSent)
+                return;
+
+            // Nếu socket chưa kết nối thì thôi
+            if (ClientSession.Tcp == null || !ClientSession.Tcp.IsConnected)
+                return;
+
+            _surrenderSent = true;
+
+            try
+            {
+                // ❗ KHÔNG cancel Close
+                // chỉ gửi 1 gói tin nhanh
+                await ClientSession.Tcp.PlayerSurrenderAsync(ClientSession.MatchID, ClientSession.PlayerID);
+            }
+            catch
+            {  }
+        }
+
+
+        // ✅ DI CHUYỂN TOKEN VỚI ANIMATION
+>>>>>>> Stashed changes
         private async Task AnimateTokenMovement(int playerId, int fromTile, int toTile, int steps)
         {
             if (!_playerTokens.ContainsKey(playerId))
@@ -567,9 +601,16 @@ namespace Client.Views.Forms
 
                     case MessageType.PropertyUpdatedEvent:
                         {
+<<<<<<< Updated upstream
                             var data = JsonSerializer.Deserialize<PropertyUpdatedEvent>(env.Payload, JsonOpt);
 
                             if (data.PropertyTileIndex == -1)
+=======
+                            var data = JsonSerializer.Deserialize<AskBuyPropertyEvent>(env.Payload, JsonOpt);
+
+
+                            if (data.TileIndex == -1)
+>>>>>>> Stashed changes
                             {
                                 MessageBox.Show("Số tiền hiện tại không đủ!");
                                 btnEndTurn.Enabled = true;

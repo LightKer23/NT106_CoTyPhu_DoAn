@@ -15,6 +15,9 @@ namespace Client.Services.Network
 
         public static int PlayerID { get; set; }  
         public static int MatchID { get; set; }
+        public static string Username { get; private set; }
+        public static string DisplayName { get; private set; }
+        public static string Email { get; private set; }
 
         public static ClientGameState GameState { get; } = new ClientGameState();
 
@@ -61,6 +64,15 @@ namespace Client.Services.Network
             public int Money { get; set; }
             public bool IsInJail { get; set; }
         }
+
+        public static void SetLoginInfo(int accountId, string username, string displayName, string email)
+        {
+            AccountID = accountId;
+            Username = username;
+            DisplayName = displayName;
+            Email = email;
+        }
+
 
         public class ClientPropertyState
         {

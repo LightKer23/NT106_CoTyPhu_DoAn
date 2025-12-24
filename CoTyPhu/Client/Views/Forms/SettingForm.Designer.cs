@@ -118,7 +118,11 @@
             pnlMenu.Dock = DockStyle.Fill;
             pnlMenu.Location = new Point(0, 0);
             pnlMenu.Name = "pnlMenu";
+<<<<<<< Updated upstream
             pnlMenu.Padding = new Padding(12, 12, 12, 12);
+=======
+            pnlMenu.Padding = new Padding(12);
+>>>>>>> Stashed changes
             pnlMenu.Size = new Size(230, 520);
             pnlMenu.TabIndex = 0;
             // 
@@ -173,7 +177,11 @@
             tabInfo.Controls.Add(lblTitleInfo);
             tabInfo.Location = new Point(4, 29);
             tabInfo.Name = "tabInfo";
+<<<<<<< Updated upstream
             tabInfo.Padding = new Padding(18, 18, 18, 18);
+=======
+            tabInfo.Padding = new Padding(18);
+>>>>>>> Stashed changes
             tabInfo.Size = new Size(658, 487);
             tabInfo.TabIndex = 0;
             tabInfo.Text = "Thông tin";
@@ -222,7 +230,11 @@
             grpAccount.Font = new Font("Segoe UI", 10F);
             grpAccount.Location = new Point(18, 62);
             grpAccount.Name = "grpAccount";
+<<<<<<< Updated upstream
             grpAccount.Padding = new Padding(14, 14, 14, 14);
+=======
+            grpAccount.Padding = new Padding(14);
+>>>>>>> Stashed changes
             grpAccount.Size = new Size(622, 220);
             grpAccount.TabIndex = 1;
             grpAccount.TabStop = false;
@@ -332,7 +344,11 @@
             tabHistory.Controls.Add(lblTitleHistory);
             tabHistory.Location = new Point(4, 29);
             tabHistory.Name = "tabHistory";
+<<<<<<< Updated upstream
             tabHistory.Padding = new Padding(18, 18, 18, 18);
+=======
+            tabHistory.Padding = new Padding(18);
+>>>>>>> Stashed changes
             tabHistory.Size = new Size(658, 487);
             tabHistory.TabIndex = 1;
             tabHistory.Text = "Lịch sử";
