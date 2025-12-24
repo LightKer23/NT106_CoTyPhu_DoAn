@@ -85,6 +85,22 @@ namespace Server.Infrastructure.Network
             return card;
         }
 
+        private Card DrawCommunityChestCard(MatchState match)
+        {
+            if (match.CommunityChestDeck.Count == 0)
+                match.CommunityChestDeck = CommunityChestDeckLoader.LoadDefaultDeck();
+
+            var card = match.CommunityChestDeck[0];
+            match.CommunityChestDeck.RemoveAt(0);
+
+            if (card.ChestType != CommunityChestCardType.GetOutOfJailFree)
+            {
+                match.CommunityChestDeck.Add(card);
+            }
+
+            return card;
+        }
+
         public ServerDispatcher()
         {
             var db = new DBConnection();
@@ -733,6 +749,70 @@ namespace Server.Infrastructure.Network
                     }
 
                 case ChanceCardType.GoToJail:
+                    SendToJail(match, player);
+                    break;
+            }
+
+            AutoLiquidateToCoverDebt(match, player);
+        }
+
+        private void HandleCommunityChestCard(MatchState match, PlayerState player)
+        {
+            var card = DrawCommunityChestCard(match);
+
+            switch (card.ChestType)
+            {
+                case CommunityChestCardType.GetOutOfJailFree:
+                    player.hasGetOutOfJailCard = true;
+                    break;
+
+                case CommunityChestCardType.EarnMoney:
+                    player.Money += card.Amount;
+                    break;
+
+                case CommunityChestCardType.PayMoney:
+                    player.Money -= card.Amount;
+                    break;
+
+                case CommunityChestCardType.CollectFromEachPlayer:
+                    foreach (var other in match.Players.Values)
+                    {
+                        if (other.PlayerId == player.PlayerId || other.IsBankrupt) continue;
+                        other.Money -= card.Amount;
+                        player.Money += card.Amount;
+
+                        // nếu muốn chặt chẽ: gọi AutoLiquidate cho "other" nếu họ âm tiền
+                        AutoLiquidateToCoverDebt(match, other);
+                    }
+                    break;
+
+                case CommunityChestCardType.MoveToTile:
+                    player.Position = card.MoveToTileIndex;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                        match.MatchId, null));
+
+                    HandleTile(match, player, card.MoveToTileIndex, 0, 0);
+                    return;
+
+                case CommunityChestCardType.StreetRepairs:
+                    {
+                        int cost = 0;
+                        foreach (var prop in match.Properties.Values)
+                        {
+                            if (prop.PlayerOwnerId == player.PlayerId)
+                            {
+                                cost += prop.houseCount * 40;
+                                if (prop.hasHotel) cost += 115;
+                            }
+                        }
+                        player.Money -= cost;
+                        break;
+                    }
+
+                case CommunityChestCardType.GoToJail:
                     SendToJail(match, player);
                     break;
             }
