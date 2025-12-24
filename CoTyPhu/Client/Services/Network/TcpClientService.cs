@@ -173,6 +173,39 @@ namespace Client.Services.Network
             playerId: playerId,
             ct: ct);
 
+        // ================== CHAT ==================
+        public async Task SendChatMessageAsync(int matchId, int playerId, string message, CancellationToken ct = default)
+        {
+            var env = new MessageEnvelope
+            {
+                MessageId = Guid.NewGuid(),
+                Type = MessageType.SendChatMessageRequest,
+                MatchId = matchId,
+                PlayerId = playerId,
+                Payload = JsonSerializer.Serialize(new SendChatMessageRequest
+                {
+                    MatchId = matchId,
+                    PlayerId = playerId,
+                    Message = message
+                }, JsonOpt)
+            };
+
+            var tcs = new TaskCompletionSource<MessageEnvelope>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pending[env.MessageId] = tcs;
+
+            await SendEnvelopeAsync(env, ct);
+
+            try
+            {
+                using var timeoutCts = new CancellationTokenSource(RequestTimeout);
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, timeoutCts.Token);
+                await tcs.Task.WaitAsync(linked.Token);
+            }
+            catch
+            {
+                _pending.TryRemove(env.MessageId, out _);
+            }
+        }
 
         // ================== CORE REQUEST ==================
         public async Task<TResp> RequestAsync<TReq, TResp>(

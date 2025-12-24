@@ -51,10 +51,8 @@ namespace Server.Infrastructure.Network
 
         private static readonly Dictionary<int, ClientConnection> _connections = new();
 
-        // (matchId, playerId) -> số lần ra đôi liên tiếp
         private static readonly Dictionary<(int matchId, int playerId), int> _doubleStreak = new();
 
-        // tù trong Monopoly thường ở tile 10 (nếu board bạn khác thì đổi)
         private const int JailTileIndex = 30;
 
         private static int GetStreak(MatchState match, PlayerState p)
@@ -129,8 +127,7 @@ namespace Server.Infrastructure.Network
                 MessageType.BuyDecisionRequest => Task.FromResult(HandleBuyDecision(req)),
                 MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)),
                 MessageType.PlayerSurrenderRequest => Task.FromResult(HandlePlayerSurrender(req)),
-
-
+                MessageType.SendChatMessageRequest => Task.FromResult(HandleSendChatMessage(req)),
 
                 _ => Task.FromResult(MakeError("No handler for message type"))
             };
@@ -428,6 +425,22 @@ namespace Server.Infrastructure.Network
                 }
             }
         }
+        
+        // ✅ BROADCAST MONEY CHANGED EVENT
+        private void BroadcastMoneyChanged(MatchState match, int playerId, int change, int currentMoney)
+        {
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.MoneyChangedEvent,
+                new MoneyChangedEvent
+                {
+                    PlayerId = playerId,
+                    CurrentMoney = currentMoney,
+                    MoneyChange = change
+                },
+                match.MatchId,
+                null
+            ));
+        }
         #endregion
 
         #region Game Handlers
@@ -448,11 +461,9 @@ namespace Server.Infrastructure.Network
             int dice2 = Random.Shared.Next(1, 7);
             bool isDouble = dice1 == dice2;
 
-            dice1 = 2; dice2 = 2; // ĐANG TEST
 
             if (player.InJail)
             {
-                // ra đôi -> ra tù và đi luôn
                 if (isDouble)
                 {
                     player.InJail = false;
@@ -646,8 +657,6 @@ namespace Server.Infrastructure.Network
                 match.WaitingForBuyDecision = false;
                 match.PendingTileIndex = null;
 
-                //FinishTurn(match, 0, 0);
-
                 return Wrap(
                     MessageType.PropertyUpdatedEvent,
                     new { Success = false },
@@ -656,22 +665,20 @@ namespace Server.Infrastructure.Network
                 );
             }
 
+            // ✅ LƯU TIỀN TRƯỚC KHI MUA
+            int moneyBefore = player.Money;
+
             bool bought = flow.BuyTile(match, player);
 
             match.WaitingForBuyDecision = false;
             match.PendingTileIndex = null;
 
             if (!bought)
-            {
-                    return Wrap(
-                    MessageType.PropertyUpdatedEvent,
-                    new { PropertyTileIndex = -1 },
-                    match.MatchId,
-                    req.PlayerId
-                );
-            }
+                return MakeError("Buy property failed");
 
-            Console.WriteLine($"Player {player.PlayerId}: {player.Money}");
+            // ✅ TÍNH TIỀN ĐÃ THAY ĐỔI VÀ BROADCAST
+            int moneyChange = player.Money - moneyBefore;
+            BroadcastMoneyChanged(match, player.PlayerId, moneyChange, player.Money);
 
             BroadcastRoom(
                 match.MatchId,
@@ -1078,6 +1085,52 @@ namespace Server.Infrastructure.Network
             if (s.otp != input) return false;
             _otp[email] = (s.otp, s.exp, true);
             return true;
+        }
+        #endregion
+
+        #region Chat Handlers
+        private MessageEnvelope HandleSendChatMessage(MessageEnvelope req)
+        {
+            var body = JsonSerializer.Deserialize<SendChatMessageRequest>(req.Payload, JsonOpt)!;
+
+            if (!ServerState.Matches.TryGetValue(body.MatchId, out var match))
+                return MakeError("Match not found");
+
+            if (!match.Players.TryGetValue(body.PlayerId, out var player))
+                return MakeError("Player not found");
+
+            var account = _accountRepo.GetById(player.AccountId);
+            string playerName = account?.Username ?? $"Player {body.PlayerId}";
+
+            foreach (var p in match.Players.Values)
+            {
+                if (p.PlayerId == body.PlayerId)
+                    continue;
+                
+                if (_connections.TryGetValue(p.AccountId, out var conn))
+                {
+                    _ = conn.SendAsync(
+                        Wrap(
+                            MessageType.ChatMessageEvent,
+                            new ChatMessageEvent
+                            {
+                                PlayerId = body.PlayerId,
+                                PlayerName = playerName,
+                                Message = body.Message
+                            },
+                            match.MatchId,
+                            null
+                        )
+                    );
+                }
+            }
+
+            return Wrap(
+                MessageType.ChatMessageEvent,
+                new { Success = true },
+                match.MatchId,
+                body.PlayerId
+            );
         }
         #endregion
     }

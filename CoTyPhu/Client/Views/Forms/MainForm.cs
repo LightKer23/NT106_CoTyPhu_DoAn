@@ -14,10 +14,20 @@ namespace Client.Views.Forms
 {
     public partial class MainForm : Form
     {
+        private static readonly HashSet<int> PropertyTiles = new HashSet<int>
+        {
+            1, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 18, 19, 
+            21, 23, 24, 25, 26, 27, 28, 29, 31, 32, 34, 35, 37, 39
+        };
+
         private Dictionary<int, PictureBox> _tileMap;           
         private Dictionary<int, Panel> _tileTokenPanels;         
         private Dictionary<int, PictureBox> _playerTokens;      
         private Dictionary<int, int> _playerTile;
+
+        // ✅ TRACKING PLAYER MONEY
+        private Dictionary<int, int> _playerMoney = new Dictionary<int, int>();
+        private Dictionary<int, string> _playerNames = new Dictionary<int, string>();
 
         // ✅ ANIMATION STATE
         private bool _isRollingDice = false;
@@ -54,17 +64,25 @@ namespace Client.Views.Forms
             btnEndTurn.Click += BtnEndTurn_Click;
             btnBuy.Click += BtnBuy_Click;
             btnUpgrade.Click += BtnUpgrade_Click;
+            btnSend.Click += BtnSend_Click;
+
+            textBox2.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    BtnSend_Click(s, e);
+                }
+            };
 
             btnEndTurn.Enabled = false;
             btnBuy.Visible = false;
             btnUpgrade.Visible = false;
 
-            // ✅ KHỞI TẠO TIMER CHO ANIMATION XÚC XẮC
             _diceAnimationTimer = new System.Windows.Forms.Timer();
-            _diceAnimationTimer.Interval = 100; // 100ms mỗi frame
+            _diceAnimationTimer.Interval = 100;
             _diceAnimationTimer.Tick += DiceAnimationTimer_Tick;
 
-            // ✅ THIẾT LẬP HÌNH ẢNH XÚC XẮC BAN ĐẦU
             pbDie1.SizeMode = PictureBoxSizeMode.CenterImage;
             pbDie2.SizeMode = PictureBoxSizeMode.CenterImage;
             pbDie1.BackColor = Color.White;
@@ -75,30 +93,26 @@ namespace Client.Views.Forms
             this.Shown += async (_, __) => await InitTokensFromRoomAsync();
         }
 
-        // ✅ XỬ LÝ ANIMATION XÚC XẮC (TỰ ĐỘNG HIỂN THỊ KẾT QUẢ KHI HẾT THỜI GIAN)
+        //Hoạt họa xúc xắc
         private void DiceAnimationTimer_Tick(object sender, EventArgs e)
         {
             _animationTicks++;
             
             if (_animationTicks < 15)
             {
-                // Hiển thị số ngẫu nhiên trong 1.5 giây (15 ticks)
                 ShowRandomDiceFaces();
             }
             else
             {
-                // ✅ DỪNG ANIMATION VÀ HIỂN THỊ KẾT QUẢ CUỐI CÙNG
                 _diceAnimationTimer.Stop();
                 _isRollingDice = false;
                 _animationTicks = 0;
                 
-                // Hiển thị kết quả thật từ server
                 ShowDiceValue(pbDie1, _finalDice1);
                 ShowDiceValue(pbDie2, _finalDice2);
                 
                 lbHistory.Items.Add($"Player {_currentPlayerId} tung được {_finalDice1} và {_finalDice2}");
                 
-                // ✅ DI CHUYỂN TOKEN SAU KHI HIỂN THỊ KẾT QUẢ
                 if (_playerTile.TryGetValue(_currentPlayerId, out int fromTile))
                 {
                     int steps = _finalDice1 + _finalDice2;
@@ -108,7 +122,6 @@ namespace Client.Views.Forms
             }
         }
 
-        // ✅ HIỂN THỊ SỐ NGẪU NHIÊN TRÊN XÚC XẮC
         private void ShowRandomDiceFaces()
         {
             int random1 = _random.Next(1, 7);
@@ -118,10 +131,8 @@ namespace Client.Views.Forms
             ShowDiceValue(pbDie2, random2);
         }
 
-        // ✅ HIỂN THỊ GIÁ TRỊ CỤ THỂ TRÊN XÚC XẮC
         private void ShowDiceValue(PictureBox pb, int value)
         {
-            // ✅ SỬ DỤNG HÌNH ẢNH TỪ RESOURCES
             pb.Image = value switch
             {
                 1 => Properties.Resources.num_1,
@@ -160,6 +171,9 @@ namespace Client.Views.Forms
                 foreach (var pnl in _tileTokenPanels.Values)
                     pnl.Controls.Clear();
 
+                lvPlayerInfo.View = View.Details;
+                lvPlayerInfo.Items.Clear();
+
                 for (int i = 0; i < players.Count && i < 4; i++)
                 {
                     var p = players[i];
@@ -167,9 +181,20 @@ namespace Client.Views.Forms
 
                     _playerTokens[p.PlayerId] = token;
                     _playerTile[p.PlayerId] = 0;
+                    
+                    _playerMoney[p.PlayerId] = 1500;
+                    _playerNames[p.PlayerId] = p.DisplayName ?? $"Player {p.PlayerId}";
 
                     PlaceTokenOnTile(p.PlayerId, 0, slotIndex: i);
+                    
+                    var item = new ListViewItem(_playerNames[p.PlayerId]);
+                    item.SubItems.Add($"${_playerMoney[p.PlayerId]}");
+                    item.Tag = p.PlayerId; 
+                    lvPlayerInfo.Items.Add(item);
                 }
+                
+                colName.Width = 120;
+                colCurrentMoney.Width = 130;
             }
             catch (Exception ex)
             {
@@ -226,6 +251,32 @@ namespace Client.Views.Forms
             );
 
             btnBuy.Visible = false;
+        }
+
+        private async void BtnSend_Click(object? sender, EventArgs e)
+        {
+            string message = textBox2.Text.Trim();
+            
+            if (string.IsNullOrEmpty(message))
+                return;
+
+            try
+            {
+                await ClientSession.Tcp.SendChatMessageAsync(
+                    ClientSession.MatchID,
+                    ClientSession.PlayerID,
+                    message
+                );
+
+                lbChat.Items.Add($"Tôi: {message}");
+                lbChat.TopIndex = lbChat.Items.Count - 1;
+
+                textBox2.Clear();
+            }
+            catch (Exception ex)
+            {
+                lbHistory.Items.Add($"[Lỗi] Không thể gửi tin nhắn: {ex.Message}");
+            }
         }
 
         private static readonly JsonSerializerOptions JsonOpt = new()
@@ -325,11 +376,46 @@ namespace Client.Views.Forms
             tokenPanel.Controls.Add(token);
             token.BringToFront();
             
-            // ✅ CẬP NHẬT VỊ TRÍ TOKEN
             _playerTile[playerId] = tileIndex;
+            
+            if (playerId == ClientSession.PlayerID)
+            {
+                ShowPropertyCard(tileIndex);
+            }
         }
 
-        // ✅ DI CHUYỂN TOKEN VỚI ANIMATION
+        private void ShowPropertyCard(int tileIndex)
+        {
+            if (PropertyTiles.Contains(tileIndex))
+            {
+                string resourceName = $"TD_{tileIndex}";
+                
+                try
+                {
+                    var resourceManager = Properties.Resources.ResourceManager;
+                    var image = resourceManager.GetObject(resourceName) as System.Drawing.Image;
+                    
+                    if (image != null)
+                    {
+                        pbTile.Image = image;
+                        pbTile.SizeMode = PictureBoxSizeMode.StretchImage;
+                    }
+                    else
+                    {
+                        pbTile.Image = null;
+                    }
+                }
+                catch
+                {
+                    pbTile.Image = null;
+                }
+            }
+            else
+            {
+                pbTile.Image = null;
+            }
+        }
+
         private async Task AnimateTokenMovement(int playerId, int fromTile, int toTile, int steps)
         {
             if (!_playerTokens.ContainsKey(playerId))
@@ -341,16 +427,18 @@ namespace Client.Views.Forms
             {
                 currentTile = (currentTile + 1) % 40;
                 
-                // Tìm slot trống cho token
                 int slot = FindAvailableSlot(currentTile, playerId);
                 PlaceTokenOnTile(playerId, currentTile, slot);
                 
-                // Delay giữa mỗi bước
                 await Task.Delay(200);
+            }
+            
+            if (playerId == ClientSession.PlayerID)
+            {
+                ShowPropertyCard(toTile);
             }
         }
 
-        // ✅ TÌM SLOT TRỐNG TRONG Ô
         private int FindAvailableSlot(int tileIndex, int currentPlayerId)
         {
             if (!_tileTokenPanels.TryGetValue(tileIndex, out var panel))
@@ -363,11 +451,9 @@ namespace Client.Views.Forms
                 int pid = kvp.Key;
                 var token = kvp.Value;
                 
-                // Bỏ qua token đang di chuyển
                 if (pid == currentPlayerId)
                     continue;
                 
-                // Kiểm tra token có nằm trong panel này không
                 if (token.Parent == panel)
                 {
                     for (int i = 0; i < TokenSlots.Length; i++)
@@ -381,7 +467,6 @@ namespace Client.Views.Forms
                 }
             }
 
-            // Trả về slot đầu tiên còn trống
             for (int i = 0; i < TokenSlots.Length; i++)
             {
                 if (!occupiedSlots.Contains(i))
@@ -391,28 +476,61 @@ namespace Client.Views.Forms
             return 0;
         }
 
+        private void UpdatePlayerMoney(int playerId, int currentMoney)
+        {
+            _playerMoney[playerId] = currentMoney;
+            
+            foreach (ListViewItem item in lvPlayerInfo.Items)
+            {
+                if (item.Tag is int pid && pid == playerId)
+                {
+                    item.SubItems[1].Text = $"${currentMoney}";
+                    
+                    if (playerId == ClientSession.PlayerID)
+                    {
+                        item.BackColor = Color.LightYellow;
+                    }
+                    
+                    break;
+                }
+            }
+        }
+
         private void HandleServerEvent(MessageEnvelope env)
         {
             Invoke(() =>
             {
                 switch (env.Type)
                 {
-                    // ✅ XỬ LÝ KẾT QUẢ DI CHUYỂN (TẤT CẢ CLIENT ĐỒNG BỘ)
                     case MessageType.PlayerMovedEvent:
                         {
                             var data = JsonSerializer.Deserialize<PlayerMoveEvent>(env.Payload, JsonOpt);
                             
-                            // ✅ LƯU KẾT QUẢ VÀ BẮT ĐẦU ANIMATION
                             _finalDice1 = data.Roll1;
                             _finalDice2 = data.Roll2;
                             _currentPlayerId = data.PlayerId;
                             
                             lbHistory.Items.Add($"Player {data.PlayerId} đang tung xúc xắc...");
                             
-                            // ✅ BẮT ĐẦU ANIMATION (Timer sẽ tự động hiển thị kết quả sau 1.5s)
                             _isRollingDice = true;
                             _animationTicks = 0;
                             _diceAnimationTimer.Start();
+                            
+                            break;
+                        }
+
+                    case MessageType.MoneyChangedEvent:
+                        {
+                            var data = JsonSerializer.Deserialize<MoneyChangedEvent>(env.Payload, JsonOpt);
+                            
+                            UpdatePlayerMoney(data.PlayerId, data.CurrentMoney);
+                            
+                            string changeText = data.MoneyChange > 0 
+                                ? $"+${data.MoneyChange}" 
+                                : $"-${Math.Abs(data.MoneyChange)}";
+                            
+                            lbHistory.Items.Add($"Player {data.PlayerId} {changeText} (Còn lại: ${data.CurrentMoney})");
+                            
                             break;
                         }
 
@@ -433,7 +551,6 @@ namespace Client.Views.Forms
                             }
                         }
 
-
                     case MessageType.PlayerSurrenderEvent:
                         {
                             var ev = JsonSerializer.Deserialize<PlayerSurrenderEvent>(env.Payload, JsonOpt);
@@ -448,15 +565,17 @@ namespace Client.Views.Forms
                             break;
                         }
 
-
                     case MessageType.PropertyUpdatedEvent:
                         {
-                            if (data.TileIndex == -1)
+                            var data = JsonSerializer.Deserialize<PropertyUpdatedEvent>(env.Payload, JsonOpt);
+
+                            if (data.PropertyTileIndex == -1)
                             {
                                 MessageBox.Show("Số tiền hiện tại không đủ!");
                                 btnEndTurn.Enabled = true;
                                 break;
-                            }    
+                            }
+                            
                             lbHistory.Items.Add("Property đã cập nhật");
                             btnEndTurn.Enabled = true;
                             break;
@@ -467,8 +586,20 @@ namespace Client.Views.Forms
                             var data = JsonSerializer.Deserialize<PlayerLeftEvent>(env.Payload, JsonOpt);
                             lbHistory.Items.Add($"Đến lượt Player {data.PlayerId}");
 
-                            // ✅ BẬT/TẮT NÚT TUNG XÚC XẮC
                             btnRollDice.Enabled = (data.PlayerId == ClientSession.PlayerID);
+                            break;
+                        }
+
+                    case MessageType.ChatMessageEvent:
+                        {
+                            var data = JsonSerializer.Deserialize<ChatMessageEvent>(env.Payload, JsonOpt);
+                            
+                            if (data.PlayerId != ClientSession.PlayerID)
+                            {
+                                lbChat.Items.Add($"{data.PlayerName}: {data.Message}");
+                                lbChat.TopIndex = lbChat.Items.Count - 1;
+                            }
+                            
                             break;
                         }
                 }

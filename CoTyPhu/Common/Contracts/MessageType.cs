@@ -67,6 +67,10 @@ namespace Common.Constracts
 
         EndTurnReponse,
 
+        // ===== CHAT =====
+        SendChatMessageRequest,    // gửi tin nhắn chat
+        ChatMessageEvent,          // broadcast tin nhắn chat
+
         // ===== GAME EVENT (Server → Client) =====
         DiceRolledEvent,         // kết quả tung xúc xắc
         TurnResultEvent,           // kết quả xử lý 1 lượt

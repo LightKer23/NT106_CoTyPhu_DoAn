@@ -266,7 +266,7 @@ namespace Server.Domain.GameLogic
         {
             player.Money -= amount;
         }
-
+        
         //Trả tiền thuê
         public void PayRent(MatchState match, PlayerState player, PropertyState property)
         {
