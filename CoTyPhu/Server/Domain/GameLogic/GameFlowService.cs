@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Server.Domain.GameLogic
 {
@@ -13,12 +14,20 @@ namespace Server.Domain.GameLogic
     {
         private readonly CardService _cardService;
 
+        // ✅ CALLBACK async để hỗ trợ delay
+        public Func<MatchState, int, string, int, string, Task>? OnDrawCard { get; set; }
+        
+        // ✅ CALLBACK để broadcast jail event
+        public Action<MatchState, PlayerState, string, int>? OnPlayerJailed { get; set; }
+        
+        // ✅ CALLBACK để broadcast movement từ card effect
+        public Action<MatchState, PlayerState, int, int>? OnPlayerMoved { get; set; }
+
         public GameFlowService()
         {
             _cardService = new CardService(this);
         }
 
-        //Trả về loại đất
         public PropertyType? GetTilePropertyKind(MatchState match, PlayerState player)
         {
             int tileIndex = player.Position;
@@ -61,13 +70,22 @@ namespace Server.Domain.GameLogic
         //Mua đất
         public bool BuyTile(MatchState match, PlayerState player)
         {
-            int tileIndex = player.Position;
+            // ✅ SỬ DỤNG PendingTileIndex THAY VÌ player.Position
+            if (!match.PendingTileIndex.HasValue)
+            {
+                Console.WriteLine($"[BuyTile] FAILED: No PendingTileIndex");
+                return false;
+            }
+
+            int tileIndex = match.PendingTileIndex.Value;
+
+            Console.WriteLine($"[BuyTile] Player {player.PlayerId} buying tile {tileIndex}, current position={player.Position}, WaitingForBuyDecision={match.WaitingForBuyDecision}");
 
             if (!match.Properties.TryGetValue(tileIndex, out var property))
+            {
+                Console.WriteLine($"[BuyTile] FAILED: Tile {tileIndex} is not a property");
                 return false;
-
-            if (!match.WaitingForBuyDecision)
-                return false;
+            }
 
             // 1️ MUA ĐẤT
             if (property.PlayerOwnerId == null)
@@ -81,7 +99,10 @@ namespace Server.Domain.GameLogic
                 };
 
                 if (player.Money < price)
+                {
+                    Console.WriteLine($"[BuyTile] FAILED: Player money ({player.Money}) < price ({price})");
                     return false;
+                }
 
                 DeductMoney(player, price);
                 property.PlayerOwnerId = player.PlayerId;
@@ -92,6 +113,7 @@ namespace Server.Domain.GameLogic
                 if (property.type == PropertyType.Utility)
                     player.UtilityCount++;
 
+                Console.WriteLine($"[BuyTile] SUCCESS: Player {player.PlayerId} bought tile {tileIndex} for {price}");
                 return true;
             }
 
@@ -108,7 +130,10 @@ namespace Server.Domain.GameLogic
                             : property.hotelPrice;
 
                     if (player.Money < upgradeCost)
+                    {
+                        Console.WriteLine($"[BuyTile] FAILED: Player money ({player.Money}) < upgrade cost ({upgradeCost})");
                         return false;
+                    }
 
                     DeductMoney(player, upgradeCost);
 
@@ -122,10 +147,12 @@ namespace Server.Domain.GameLogic
                         property.hasHotel = true;
                     }
 
+                    Console.WriteLine($"[BuyTile] SUCCESS: Player {player.PlayerId} upgraded tile {tileIndex}");
                     return true;
                 }
             }
 
+            Console.WriteLine($"[BuyTile] FAILED: No valid action (already owned by others or fully upgraded)");
             return false;
         }
 
@@ -138,6 +165,9 @@ namespace Server.Domain.GameLogic
             // 1. Lấy loại ô (tĩnh)
             TileType tileType = ServerState.Board[tileIndex].type;
 
+            // ✅ LOG ĐỂ KIỂM TRA
+            Console.WriteLine($"[HandlePlayerLanded] Player {player.PlayerId} landed on tile {tileIndex}, TileType = {tileType}");
+
             switch (tileType)
             {
                 case TileType.Start:
@@ -148,7 +178,12 @@ namespace Server.Domain.GameLogic
 
                 case TileType.GoToJail:
                     {
+                        int fromPos = player.Position;
                         SendPlayerToJail(match, player);
+                        
+                        // ✅ CALLBACK để broadcast jail event
+                        OnPlayerJailed?.Invoke(match, player, "GoToJail", fromPos);
+                        
                         return;
                     }
 
@@ -266,7 +301,7 @@ namespace Server.Domain.GameLogic
         {
             player.Money -= amount;
         }
-
+        
         //Trả tiền thuê
         public void PayRent(MatchState match, PlayerState player, PropertyState property)
         {
@@ -332,9 +367,16 @@ namespace Server.Domain.GameLogic
         //Đi thẳng vào tù
         private void SendPlayerToJail(MatchState match, PlayerState player)
         {
+            int fromPos = player.Position;
+            
             // Ô Jail mặc định index = 10
             player.Position = 10;
             player.InJail = true;
+            
+            // ✅ SET SỐ LƯỢT CÒN LẠI = 3
+            player.JailTurnsRemaining = 3;
+            
+            Console.WriteLine($"[SendPlayerToJail] Player {player.PlayerId} sent to jail, turns remaining: 3");
         }
 
         //Trả tiền thuế
@@ -350,16 +392,92 @@ namespace Server.Domain.GameLogic
         }
 
         //Xử lý lá bài cơ hội
-        private void HandleChance(MatchState match, PlayerState player)
+        private async void HandleChance(MatchState match, PlayerState player)
         {
-            _cardService.DrawChanceCard(match, player, ServerState.chanceDeck);
+            Console.WriteLine($"[HandleChance] Player {player.PlayerId} entered Chance tile");
+
+            // ✅ XÁC ĐỊNH CARD INDEX
+            if (match.NextChanceCardIndex == -1)
+            {
+                match.NextChanceCardIndex = Random.Shared.Next(1, 17);
+                Console.WriteLine($"[HandleChance] First draw, random cardIndex = {match.NextChanceCardIndex}");
+            }
+            else
+            {
+                Console.WriteLine($"[HandleChance] Using existing cardIndex = {match.NextChanceCardIndex}");
+            }
+            
+            int cardIndex = match.NextChanceCardIndex;
+
+            // ✅ RÚT THẺ TỪ DECK (index từ 1-16 → array index 0-15)
+            int deckIndex = (cardIndex - 1) % match.ChanceDeck.Count;
+            var card = match.ChanceDeck[deckIndex];
+            
+            Console.WriteLine($"[HandleChance] Card = {card.Description}, deckIndex = {deckIndex}");
+            
+            // ✅ BROADCAST DRAW CARD EVENT (với delay)
+            if (OnDrawCard != null)
+            {
+                Console.WriteLine($"[HandleChance] Calling OnDrawCard callback...");
+                await OnDrawCard(match, player.PlayerId, "Chance", cardIndex, card.Description);
+                Console.WriteLine($"[HandleChance] OnDrawCard callback completed");
+            }
+            else
+            {
+                Console.WriteLine($"[HandleChance] ERROR: OnDrawCard is NULL!");
+            }
+
+            // ✅ TĂNG INDEX CHO LẦN SAU (1-16 quay vòng)
+            match.NextChanceCardIndex = (cardIndex % 16) + 1;
+            Console.WriteLine($"[HandleChance] Next cardIndex = {match.NextChanceCardIndex}");
+
+            // ✅ XỬ LÝ HIỆU ỨNG THẺ (gọi CardService hoặc xử lý trực tiếp)
+            _cardService.applyEffectPlayer(match, player, card);
         }
 
 
         //Xử lý lá bài Khí vận
-        private void HandleCommunityChest(MatchState match, PlayerState player)
+        private async void HandleCommunityChest(MatchState match, PlayerState player)
         {
-            _cardService.DrawCommunityChestCard(match, player, ServerState.communityChestDeck);
+            Console.WriteLine($"[HandleCommunityChest] Player {player.PlayerId} entered CommunityChest tile");
+
+            // ✅ XÁC ĐỊNH CARD INDEX
+            if (match.NextCommunityChestCardIndex == -1)
+            {
+                match.NextCommunityChestCardIndex = Random.Shared.Next(1, 17);
+                Console.WriteLine($"[HandleCommunityChest] First draw, random cardIndex = {match.NextCommunityChestCardIndex}");
+            }
+            else
+            {
+                Console.WriteLine($"[HandleCommunityChest] Using existing cardIndex = {match.NextCommunityChestCardIndex}");
+            }
+            
+            int cardIndex = match.NextCommunityChestCardIndex;
+
+            // ✅ RÚT THẺ TỪ DECK (index từ 1-16 → array index 0-15)
+            int deckIndex = (cardIndex - 1) % match.CommunityChestDeck.Count;
+            var card = match.CommunityChestDeck[deckIndex];
+            
+            Console.WriteLine($"[HandleCommunityChest] Card = {card.Description}, deckIndex = {deckIndex}");
+            
+            // ✅ BROADCAST DRAW CARD EVENT (với delay)
+            if (OnDrawCard != null)
+            {
+                Console.WriteLine($"[HandleCommunityChest] Calling OnDrawCard callback...");
+                await OnDrawCard(match, player.PlayerId, "CommunityChest", cardIndex, card.Description);
+                Console.WriteLine($"[HandleCommunityChest] OnDrawCard callback completed");
+            }
+            else
+            {
+                Console.WriteLine($"[HandleCommunityChest] ERROR: OnDrawCard is NULL!");
+            }
+
+            // ✅ TĂNG INDEX CHO LẦN SAU (1-16 quay vòng)
+            match.NextCommunityChestCardIndex = (cardIndex % 16) + 1;
+            Console.WriteLine($"[HandleCommunityChest] Next cardIndex = {match.NextCommunityChestCardIndex}");
+
+            // ✅ XỬ LÝ HIỆU ỨNG THẺ
+            _cardService.applyEffectPlayer(match, player, card);
         }
 
 
@@ -383,9 +501,12 @@ namespace Server.Domain.GameLogic
 
             do
             {
-                match.CurrentPlayerIndex = (match.CurrentPlayerIndex + 1) % totalPlayers;
-            } while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
+                match.CurrentPlayerIndex =
+                    (match.CurrentPlayerIndex + 1) % totalPlayers;
+            }
+            while (match.Players[match.CurrentPlayerIndex].IsBankrupt);
         }
+
 
         public PropertyState? ConvertTiletoPropertyState(Tile tile, int tileIndex)
         {
