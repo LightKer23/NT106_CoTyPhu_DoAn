@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    public class PlayerJailedEvent
+    public class MatchEndedEvent
     {
-        public int PlayerId { get; set; }
+        public int WinnerPlayerId { get; set; }
+        public string Name { get; set; }
     }
 }

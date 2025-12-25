@@ -95,18 +95,14 @@ namespace Server.Domain.GameLogic
                             int oldPos = player.Position;
                             int newPos = card.MoveToTileIndex;
 
-                            // ✅ KHÔNG CẦN CỘNG Ở ĐÂY, OnPlayerMoved callback sẽ xử lý
-                            // (đã comment)
-                            // if (newPos < oldPos)
-                            // {
-                            //     _flow.AddMoney(player, 200);
-                            // }
+                            // đi qua GO
+                            if (newPos < oldPos)
+                            {
+                                _flow.AddMoney(player, 200);
+                            }
 
                             // cập nhật vị trí
                             player.Position = newPos;
-
-                            // ✅ BROADCAST MOVEMENT EVENT (để client animate)
-                            _flow.OnPlayerMoved?.Invoke(match, player, oldPos, newPos);
 
                             // xử lý ô vừa đến
                             _flow.HandlePlayerLanded(match, player);
@@ -118,7 +114,6 @@ namespace Server.Domain.GameLogic
                         {
                             int boardSize = match.Board.Count;
 
-                            int oldPos = player.Position;
                             int newPos = player.Position - card.MoveBackSteps;
 
                             // lùi quá 0 → vòng bàn cờ
@@ -130,9 +125,6 @@ namespace Server.Domain.GameLogic
                             // cập nhật vị trí
                             player.Position = newPos;
 
-                            // ✅ BROADCAST MOVEMENT EVENT (để client animate)
-                            _flow.OnPlayerMoved?.Invoke(match, player, oldPos, newPos);
-
                             // xử lý ô vừa đến
                             _flow.HandlePlayerLanded(match, player);
 
@@ -141,12 +133,8 @@ namespace Server.Domain.GameLogic
 
                     case ChanceCardType.GoToJail:
                         {
-                            int fromPos = player.Position;
                             player.Position = 10;
                             player.InJail = true;
-                            
-                            // ✅ CALLBACK để broadcast jail event
-                            _flow.OnPlayerJailed?.Invoke(match, player, "ChanceCard", fromPos);
                             break;
                         }
 
@@ -170,14 +158,10 @@ namespace Server.Domain.GameLogic
                             if (newPos == -1)
                             {
                                 newPos = railroadIndexes[0];
-                                // ✅ KHÔNG CẦN CỘNG Ở ĐÂY, OnPlayerMoved callback sẽ xử lý
-                                // _flow.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             player.Position = newPos;
-
-                            // ✅ BROADCAST MOVEMENT EVENT (để client animate)
-                            _flow.OnPlayerMoved?.Invoke(match, player, currentPos, newPos);
 
                             Tile tile = match.Board[newPos];
                             PropertyState newTile = _flow.ConvertTiletoPropertyState(tile, player.Position);
@@ -217,15 +201,11 @@ namespace Server.Domain.GameLogic
                             if (newPos == -1)
                             {
                                 newPos = utilityIndexes[0];
-                                // ✅ KHÔNG CẦN CỘNG Ở ĐÂY, OnPlayerMoved callback sẽ xử lý
-                                // _flow.AddMoney(player, 200);
+                                _flow.AddMoney(player, 200);
                             }
 
                             // cập nhật vị trí
                             player.Position = newPos;
-
-                            // ✅ BROADCAST MOVEMENT EVENT (để client animate)
-                            _flow.OnPlayerMoved?.Invoke(match, player, currentPos, newPos);
 
                             Tile tile = match.Board[newPos];
                             PropertyState newTile = _flow.ConvertTiletoPropertyState(tile, player.Position);
@@ -321,17 +301,14 @@ namespace Server.Domain.GameLogic
                             int oldPos = player.Position;
                             int newPos = card.MoveToTileIndex;
 
-                            // ✅ KHÔNG CẦN CỘNG Ở ĐÂY, OnPlayerMoved callback sẽ xử lý
-                            // if (newPos < oldPos)
-                            // {
-                            //     _flow.AddMoney(player, 200);
-                            // }
+                            // đi qua ô Bắt đầu
+                            if (newPos < oldPos)
+                            {
+                                _flow.AddMoney(player, 200);
+                            }
 
                             // cập nhật vị trí
                             player.Position = newPos;
-
-                            // ✅ BROADCAST MOVEMENT EVENT (để client animate)
-                            _flow.OnPlayerMoved?.Invoke(match, player, oldPos, newPos);
 
                             _flow.HandlePlayerLanded(match, player);
 
@@ -340,12 +317,8 @@ namespace Server.Domain.GameLogic
 
                     case CommunityChestCardType.GoToJail:
                         {
-                            int fromPos = player.Position;
                             player.Position = 10;
                             player.InJail = true;
-                            
-                            // ✅ CALLBACK để broadcast jail event
-                            _flow.OnPlayerJailed?.Invoke(match, player, "CommunityChestCard", fromPos);
                             break;
                         }
 

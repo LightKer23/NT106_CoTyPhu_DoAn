@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    public class PlayerJailedEvent
+    public class DiceRolledEvent
     {
-        public int PlayerId { get; set; }
     }
 }

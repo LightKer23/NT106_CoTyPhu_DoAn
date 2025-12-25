@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace Common.Contracts.Game
 {
-    public class PlayerJailedEvent
+    public class UpgradePropertyRequest
     {
-        public int PlayerId { get; set; }
+        public int PropertyId { get; set; }
     }
 }

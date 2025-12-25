@@ -5,92 +5,125 @@ using System.Windows;
 using Server.Infrastructure.Database.Connection;
 using Common.Domain.Models.Entities;
 
-namespace Server.Infrastructure.Database.Repository
+public class MatchRepo
 {
-    public class MatchRepo
+    private readonly DBConnection _db;
+
+    public MatchRepo(DBConnection db)
     {
-        private readonly DBConnection _db;
+        _db = db;
+    }
 
-        public MatchRepo(DBConnection db)
-        {
-            _db = db;
-        }
+    // 1️⃣ Tạo phòng (chưa có player)
+    public int CreateMatch()
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-        // Tạo match mới (Waiting)
-        public int CreateMatch()
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
-
-            var cmd = new SqlCommand(@"
-            INSERT INTO Match(NumberPlayer, Status)
+        var cmd = new SqlCommand(@"
+            INSERT INTO Match (NumberPlayer, Turn, Status)
             OUTPUT INSERTED.IDMatch
-            VALUES (1, 'Waiting')", conn);
+            VALUES (0, 0, 'Waiting')", conn);
 
-            return (int)cmd.ExecuteScalar();
-        }
+        return (int)cmd.ExecuteScalar();
+    }
 
-        // Khi host bấm Start
-        public bool StartMatch(int idMatch)
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
+    // 2️⃣ + người
+    public void IncreasePlayer(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-            var cmd = new SqlCommand(@"
+        var cmd = new SqlCommand(
+            "UPDATE Match SET NumberPlayer = NumberPlayer + 1 WHERE IDMatch=@id", conn);
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
+    }
+
+    // 3️⃣ - người
+    public void DecreasePlayer(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        var cmd = new SqlCommand(
+            "UPDATE Match SET NumberPlayer = NumberPlayer - 1 WHERE IDMatch=@id", conn);
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
+    }
+
+    // 4️⃣ Set host / đổi host
+    public void UpdateTurn(int matchId, int playerId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        var cmd = new SqlCommand(
+            "UPDATE Match SET Turn=@pid WHERE IDMatch=@id", conn);
+        cmd.Parameters.AddWithValue("@pid", playerId);
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
+    }
+
+    // 5️⃣ Start game
+    public void StartMatch(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        var cmd = new SqlCommand(@"
             UPDATE Match
-            SET Status = 'Playing',
-                StartTime = GETDATE(),
-                Turn = 1
-            WHERE IDMatch = @id", conn);
+            SET Status='Playing',
+                StartTime=GETDATE()
+            WHERE IDMatch=@id", conn);
 
-            cmd.Parameters.AddWithValue("@id", idMatch);
-            return cmd.ExecuteNonQuery() > 0;
-        }
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
+    }
 
-        // Tăng số người (chỉ để thống kê)
-        public bool IncreasePlayerCount(int idMatch)
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
+    // 6️⃣ End game
+    public void EndMatch(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
 
-            var cmd = new SqlCommand(
-                "UPDATE Match SET NumberPlayer = NumberPlayer + 1 WHERE IDMatch = @id",
-                conn);
-
-            cmd.Parameters.AddWithValue("@id", idMatch);
-            return cmd.ExecuteNonQuery() > 0;
-        }
-
-        // Giảm số người (khi leave)
-        public bool DecreasePlayerCount(int idMatch)
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
-
-            var cmd = new SqlCommand(
-                "UPDATE Match SET NumberPlayer = NumberPlayer - 1 WHERE IDMatch = @id",
-                conn);
-
-            cmd.Parameters.AddWithValue("@id", idMatch);
-            return cmd.ExecuteNonQuery() > 0;
-        }
-
-        // Kết thúc trận
-        public bool EndMatch(int idMatch)
-        {
-            using var conn = _db.GetConnection();
-            conn.Open();
-
-            var cmd = new SqlCommand(@"
+        var cmd = new SqlCommand(@"
             UPDATE Match
-            SET EndTime = GETDATE(),
-                Status = 'End'
-            WHERE IDMatch = @id", conn);
+            SET Status='End',
+                EndTime=GETDATE()
+            WHERE IDMatch=@id", conn);
 
-            cmd.Parameters.AddWithValue("@id", idMatch);
-            return cmd.ExecuteNonQuery() > 0;
-        }
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
+    }
+
+    // 7️⃣ Hủy phòng
+    public void DeleteMatch(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        var cmd = new SqlCommand(
+            "DELETE FROM Match WHERE IDMatch=@id", conn);
+        cmd.Parameters.AddWithValue("@id", matchId);
+        cmd.ExecuteNonQuery();
     }
 
 
+    // 8️⃣ Lấy lượt hiện tại (Turn) từ SQL
+    public int GetTurn(int matchId)
+    {
+        using var conn = _db.GetConnection();
+        conn.Open();
+
+        var cmd = new SqlCommand(
+            "SELECT Turn FROM Match WHERE IDMatch = @id",
+            conn
+        );
+        cmd.Parameters.AddWithValue("@id", matchId);
+
+        var result = cmd.ExecuteScalar();
+
+        return result != null ? Convert.ToInt32(result) : 0;
+    }
 }

@@ -4,10 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Common.Contracts.Game
+namespace Common.Contracts.Auth
 {
-    public class PlayerJailedEvent
+    public class GetMatchHistoryRequest
     {
-        public int PlayerId { get; set; }
+        public int AccountId { get; set; }
     }
 }
+
