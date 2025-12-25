@@ -14,12 +14,17 @@ using Server.Infrastructure.Database.Repository;
 using Server.Infrastructure.Network;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+
+
 
 namespace Server.Infrastructure.Network
 {
@@ -1206,17 +1211,62 @@ namespace Server.Infrastructure.Network
 
         private static void GenerateOtp(string email)
         {
-            _otp[email] = (new Random().Next(100000, 999999).ToString(),
-                DateTime.UtcNow.AddMinutes(2), false);
+            // 🔐 Sinh OTP an toàn
+            string otp = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+
+            _otp[email] = (otp, DateTime.UtcNow.AddMinutes(2), false);
+
+            // 📧 Gửi mail OTP
+            SendOtpEmail(email, otp);
         }
 
         private static bool VerifyOtp(string email, string input)
         {
-            if (!_otp.TryGetValue(email, out var s)) return false;
-            if (s.exp < DateTime.UtcNow) return false;
-            if (s.otp != input) return false;
+            if (!_otp.TryGetValue(email, out var s))
+                return false;
+
+            if (s.exp < DateTime.UtcNow)
+                return false;
+
+            if (s.otp != input)
+                return false;
+
             _otp[email] = (s.otp, s.exp, true);
             return true;
+        }
+
+        private static void SendOtpEmail(string toEmail, string otp)
+        {
+            string host = ConfigurationManager.AppSettings["SMTP_HOST"];
+            int port = int.Parse(ConfigurationManager.AppSettings["SMTP_PORT"]);
+            string fromEmail = ConfigurationManager.AppSettings["SMTP_EMAIL"];
+            string password = ConfigurationManager.AppSettings["SMTP_PASSWORD"];
+
+            var message = new MailMessage
+            {
+                From = new MailAddress(fromEmail),
+                Subject = "Monopoly Game - OTP Reset Password",
+                Body =
+        $@"Xin chào,
+
+Mã OTP của bạn là: {otp}
+
+OTP có hiệu lực trong 2 phút.
+Nếu bạn không yêu cầu, vui lòng bỏ qua email này.
+
+Monopoly Online Game",
+                IsBodyHtml = false
+            };
+
+            message.To.Add(toEmail);
+
+            using var smtp = new SmtpClient(host, port)
+            {
+                Credentials = new NetworkCredential(fromEmail, password),
+                EnableSsl = true
+            };
+
+            smtp.Send(message);
         }
         #endregion
 

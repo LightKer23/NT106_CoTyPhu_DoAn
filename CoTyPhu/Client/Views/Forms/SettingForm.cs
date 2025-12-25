@@ -130,7 +130,6 @@ namespace Client.Views.Forms
             }
         }
 
-        // =========================
         // LOGOUT
         private void BtnLogout_Click(object? sender, EventArgs e)
         {
@@ -144,14 +143,14 @@ namespace Client.Views.Forms
 
             ClientSession.Disconnect();
 
+            foreach (Form f in Application.OpenForms.Cast<Form>().ToList())
+            {
+                f.Hide();
+            }
+
             var login = new LoginForm();
             login.Show();
 
-            foreach (Form f in Application.OpenForms.Cast<Form>().ToList())
-            {
-                if (f != login)
-                    f.Close();
-            }
         }
     }
 }
