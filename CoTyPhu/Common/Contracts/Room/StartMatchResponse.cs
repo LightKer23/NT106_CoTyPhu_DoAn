@@ -10,5 +10,8 @@ namespace Common.Contracts.Room
     {
         public bool Success { get; set; }
         public int MatchId { get; set; }
+
+        public int HostPlayerId { get; set; }
+
     }
 }

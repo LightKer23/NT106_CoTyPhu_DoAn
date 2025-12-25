@@ -13,11 +13,8 @@ namespace Common.Domain.Models.Entities
         public int IDAccount { get; set; }
 
         public int? Rank { get; set; }
-        public int Money { get; set; }
-        public int Position { get; set; }
-        public string StatusPlayer { get; set; } //Bankrupt, Crash, Playing, Waiting
+        public DateTime? CrashTime { get; set; }
 
-        public int CharacterIndex { get; set; }
-
+        public string Status { get; set; }   // Waiting | Playing | Bankrupt | Crash
     }
 }

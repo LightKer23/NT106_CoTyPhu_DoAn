@@ -87,7 +87,6 @@ namespace Server.Domain.GameLogic
                 return false;
             }
 
-            // 1️ MUA ĐẤT
             if (property.PlayerOwnerId == null)
             {
                 int price = property.type switch
@@ -100,7 +99,6 @@ namespace Server.Domain.GameLogic
 
                 if (player.Money < price)
                 {
-                    Console.WriteLine($"[BuyTile] FAILED: Player money ({player.Money}) < price ({price})");
                     return false;
                 }
 
@@ -117,7 +115,6 @@ namespace Server.Domain.GameLogic
                 return true;
             }
 
-            // 2️ NÂNG CẤP ĐẤT
             if (property.PlayerOwnerId == player.PlayerId &&
                 property.type == PropertyType.Property)
             {
@@ -131,7 +128,6 @@ namespace Server.Domain.GameLogic
 
                     if (player.Money < upgradeCost)
                     {
-                        Console.WriteLine($"[BuyTile] FAILED: Player money ({player.Money}) < upgrade cost ({upgradeCost})");
                         return false;
                     }
 
@@ -165,9 +161,7 @@ namespace Server.Domain.GameLogic
             // 1. Lấy loại ô (tĩnh)
             TileType tileType = ServerState.Board[tileIndex].type;
 
-            // ✅ LOG ĐỂ KIỂM TRA
-            Console.WriteLine($"[HandlePlayerLanded] Player {player.PlayerId} landed on tile {tileIndex}, TileType = {tileType}");
-
+            
             switch (tileType)
             {
                 case TileType.Start:

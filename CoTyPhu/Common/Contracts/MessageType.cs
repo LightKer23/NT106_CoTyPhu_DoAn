@@ -26,6 +26,9 @@ namespace Common.Constracts
         ResetPasswordRequest,      // client gửi mật khẩu mới
         ResetPasswordResponse,     // server xác nhận đổi mật khẩu
 
+        GetMatchHistoryRequest,
+        GetMatchHistoryResponse,
+
         // ===== ROOM / MATCH =====
         CreateRoomRequest,         // tạo phòng chơi
         CreateRoomResponse,        // server trả info phòng
@@ -68,6 +71,8 @@ namespace Common.Constracts
         PropertyOwnershipChangedEvent, // ✅ thay đổi quyền sở hữu/mức độ đất (mua, xây nhà, khách sạn)
 
         EndTurnReponse,
+
+        MatchEndedEvent,
 
         // ===== CHAT =====
         SendChatMessageRequest,    // gửi tin nhắn chat
