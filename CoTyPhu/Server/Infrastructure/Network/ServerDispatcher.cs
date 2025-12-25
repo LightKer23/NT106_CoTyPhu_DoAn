@@ -110,6 +110,58 @@ namespace Server.Infrastructure.Network
             _accountRepo = new AccountRepo(db);
             _matchRepo = new MatchRepo(db);
             _playerRepo = new PlayerRepo(db);
+
+            // ✅ ĐĂNG KÝ CALLBACK với DELAY để đợi animation di chuyển hoàn thành
+            flow.OnDrawCard = async (match, playerId, cardType, cardIndex, description) =>
+            {
+                Console.WriteLine($"[OnDrawCard] Starting delay for player {playerId}, card {cardType}_{cardIndex}");
+                
+                // ✅ ĐỢI animation di chuyển hoàn thành
+                // Animation: 200ms/bước × ~7 bước = ~1.4s
+                // Delay 1.5s để đảm bảo animation đã xong
+                await Task.Delay(1500);
+                
+                Console.WriteLine($"[OnDrawCard] Broadcasting DrawCardEvent for player {playerId}");
+                BroadcastDrawCard(match, playerId, cardType, cardIndex, description);
+                Console.WriteLine($"[OnDrawCard] Broadcast completed");
+            };
+
+            // ✅ ĐĂNG KÝ CALLBACK để broadcast jail event
+            flow.OnPlayerJailed = (match, player, reason, fromTile) =>
+            {
+                BroadcastPlayerJailed(match, player, reason, fromTile);
+            };
+
+            // ✅ ĐĂNG KÝ CALLBACK để broadcast movement từ card
+            flow.OnPlayerMoved = (match, player, fromTile, toTile) =>
+            {
+                Console.WriteLine($"[OnPlayerMoved] Player {player.PlayerId} moved by card from {fromTile} to {toTile}");
+                
+                // ✅ CHECK ĐI QUA GO (tile 0) KHI DI CHUYỂN TỪ CARD
+                bool passedGo = toTile < fromTile && toTile != 10; // Không tính khi vào tù (tile 10)
+                if (passedGo)
+                {
+                    int moneyBefore = player.Money;
+                    player.Money += 200;
+                    BroadcastMoneyChanged(match, player.PlayerId, 200, player.Money);
+                    Console.WriteLine($"[OnPlayerMoved] Player {player.PlayerId} passed GO from card, received $200");
+                }
+                
+                // Broadcast PlayerMovedEvent với Roll1=0, Roll2=0 và FromTile/ToTile
+                BroadcastRoom(match.MatchId, Wrap(
+                    MessageType.PlayerMovedEvent,
+                    new PlayerMoveEvent 
+                    { 
+                        PlayerId = player.PlayerId, 
+                        Roll1 = 0, 
+                        Roll2 = 0,
+                        FromTile = fromTile,
+                        ToTile = toTile
+                    },
+                    match.MatchId, 
+                    null
+                ));
+            };
         }
 
         public Task<MessageEnvelope> DispatchAsync(MessageEnvelope req)
@@ -135,6 +187,7 @@ namespace Server.Infrastructure.Network
                 MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)),
                 MessageType.PlayerSurrenderRequest => Task.FromResult(HandlePlayerSurrender(req)),
                 MessageType.SendChatMessageRequest => Task.FromResult(HandleSendChatMessage(req)),
+                MessageType.GetOutOfJailRequest => Task.FromResult(HandleGetOutOfJail(req)),
 
                 _ => Task.FromResult(MakeError("No handler for message type"))
             };
@@ -307,6 +360,108 @@ namespace Server.Infrastructure.Network
             );
         }
 
+        private MessageEnvelope HandleGetOutOfJail(MessageEnvelope req)
+        {
+            var body = JsonSerializer.Deserialize<GetOutOfJailRequest>(req.Payload, JsonOpt)!;
+
+            if (!req.MatchId.HasValue || !req.PlayerId.HasValue)
+                return MakeError("Invalid GetOutOfJail request");
+
+            if (!ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+                return MakeError("Match not found");
+
+            if (!match.Players.TryGetValue(req.PlayerId.Value, out var player))
+                return MakeError("Player not found");
+
+            if (!player.InJail)
+                return MakeError("Player is not in jail");
+
+            Console.WriteLine($"[HandleGetOutOfJail] Player {player.PlayerId} method: {body.Method}");
+
+            switch (body.Method)
+            {
+                case "PayMoney":
+                    if (player.Money < 200)
+                    {
+                        return Wrap(
+                            MessageType.ErrorResponse,
+                            new { Message = "Không đủ $200 để ra tù!" },
+                            match.MatchId,
+                            player.PlayerId
+                        );
+                    }
+
+                    player.Money -= 200;
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    BroadcastMoneyChanged(match, player.PlayerId, -200, player.Money);
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "PayMoney",
+                            Message = $"Player {player.PlayerId} đã trả $200 để ra tù"
+                        },
+                        match.MatchId, null));
+
+                    return Wrap(
+                        MessageType.GetOutOfJailRequest,
+                        new GetOutOfJailResponse
+                        {
+                            Success = true,
+                            Method = "PayMoney",
+                            Message = "Đã trả $200 để ra tù. Hãy tung xúc xắc!",
+                            MoneyPaid = 200
+                        },
+                        match.MatchId,
+                        player.PlayerId
+                    );
+
+                case "UseCard":
+                    if (!player.hasGetOutOfJailCard)
+                    {
+                        return Wrap(
+                            MessageType.ErrorResponse,
+                            new { Message = "Bạn không có thẻ ra tù!" },
+                            match.MatchId,
+                            player.PlayerId
+                        );
+                    }
+
+                    player.hasGetOutOfJailCard = false;
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "UseCard",
+                            Message = $"Player {player.PlayerId} đã sử dụng thẻ ra tù"
+                        },
+                        match.MatchId, null));
+
+                    return Wrap(
+                        MessageType.GetOutOfJailRequest,
+                        new GetOutOfJailResponse
+                        {
+                            Success = true,
+                            Method = "UseCard",
+                            Message = "Đã sử dụng thẻ ra tù. Hãy tung xúc xắc!",
+                            UsedCard = true
+                        },
+                        match.MatchId,
+                        player.PlayerId
+                    );
+
+                default:
+                    return MakeError("Invalid method");
+            }
+        }
         private MessageEnvelope HandleJoinRoom(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<JoinRoomRequest>(req.Payload, JsonOpt)!;
@@ -340,6 +495,8 @@ namespace Server.Infrastructure.Network
                     AccountId = body.AccountID,
                     CharacterIndex = body.CharacterIndex
                 };
+
+                _connections[body.AccountID] = ServerState.CurrentConnection!;
 
                 if (match.CurrentTurnPlayerId == 0)
                 {
@@ -379,11 +536,6 @@ namespace Server.Infrastructure.Network
                 slot
             );
         }
-
-
-
-
-
 
         private MessageEnvelope HandleLeaveRoom(MessageEnvelope req)
         {
@@ -482,6 +634,16 @@ namespace Server.Infrastructure.Network
             )
             );
 
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PlayerLeftEvent,
+                    new PlayerLeftEvent { PlayerId = match.CurrentTurnPlayerId },
+                    match.MatchId,
+                    null
+                )
+            );
+
             return Wrap(
                 MessageType.StartMatchResponse,
                 new { Success = true },
@@ -489,7 +651,6 @@ namespace Server.Infrastructure.Network
                 req.PlayerId
             );
         }
-
 
         #region Broadcast Helpers
         private void BroadcastRoom(int matchId, MessageEnvelope env)
@@ -506,7 +667,6 @@ namespace Server.Infrastructure.Network
             }
         }
         
-        // ✅ BROADCAST MONEY CHANGED EVENT
         private void BroadcastMoneyChanged(MatchState match, int playerId, int change, int currentMoney)
         {
             BroadcastRoom(match.MatchId, Wrap(
@@ -516,6 +676,63 @@ namespace Server.Infrastructure.Network
                     PlayerId = playerId,
                     CurrentMoney = currentMoney,
                     MoneyChange = change
+                },
+                match.MatchId,
+                null
+            ));
+        }
+
+        private void BroadcastDrawCard(MatchState match, int playerId, string cardType, int cardIndex, string description)
+        {
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.DrawCardEvent,
+                new DrawCardEvent
+                {
+                    PlayerId = playerId,
+                    CardType = cardType,
+                    CardIndex = cardIndex,
+                    Description = description
+                },
+                match.MatchId,
+                null
+            ));
+        }
+
+        private void BroadcastPropertyOwnershipChanged(MatchState match, PropertyState property)
+        {
+            string propertyType = property.type switch
+            {
+                PropertyType.Property => "Property",
+                PropertyType.RailRoad => "RailRoad",
+                PropertyType.Utility => "Utility",
+                _ => "Unknown"
+            };
+
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.PropertyOwnershipChangedEvent,
+                new PropertyOwnershipChangedEvent
+                {
+                    TileIndex = property.TileIndex,
+                    OwnerId = property.PlayerOwnerId,
+                    HouseCount = property.houseCount,
+                    HasHotel = property.hasHotel,
+                    PropertyType = propertyType
+                },
+                match.MatchId,
+                null
+            ));
+        }
+
+        private void BroadcastPlayerJailed(MatchState match, PlayerState player, string reason, int fromTile)
+        {
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.PlayerJailedEvent,
+                new PlayerJailedEvent
+                {
+                    PlayerId = player.PlayerId,
+                    Reason = reason,
+                    FromTile = fromTile,
+                    ToTile = JailTileIndex
                 },
                 match.MatchId,
                 null
@@ -542,34 +759,81 @@ namespace Server.Infrastructure.Network
             bool isDouble = dice1 == dice2;
 
 
-            //if (player.InJail)
-            //{
-            //    if (isDouble)
-            //    {
-            //        player.InJail = false;
-            //        SetStreak(match, player, 0);
+            if (player.InJail)
+            {
+                player.JailTurnsRemaining--;
 
-            //        int fromJ = player.Position;
-            //        int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
-            //        player.Position = toJ;
+                Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} in jail, turns remaining: {player.JailTurnsRemaining}, rolled: {dice1}, {dice2}");
 
-            //        BroadcastRoom(match.MatchId, Wrap(
-            //            MessageType.PlayerMovedEvent,
-            //            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
-            //            match.MatchId, null));
+                if (isDouble)
+                {
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+                    SetStreak(match, player, 0);
 
-            //        HandleTile(match, player, toJ, dice1, dice2);
-            //    }
-            //    else
-            //    {
-            //        BroadcastRoom(match.MatchId, Wrap(
-            //            MessageType.PlayerMovedEvent,
-            //            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
-            //            match.MatchId, null));
-            //    }
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "RollDice",
+                            Message = $"Player {player.PlayerId} tung được xúc xắc đôi ({dice1}, {dice2}) và ra tù!"
+                        },
+                        match.MatchId, null));
 
-            //    return Wrap(MessageType.DiceRolledEvent, new { Success = true }, match.MatchId, body.PlayerId);
-            //}
+                    int fromJ = player.Position;
+                    int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
+                    player.Position = toJ;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+                        match.MatchId, null));
+
+                    HandleTile(match, player, toJ, dice1, dice2);
+                }
+                else if (player.JailTurnsRemaining <= 0)
+                {
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    int moneyBefore = player.Money;
+                    player.Money -= 200;
+                    BroadcastMoneyChanged(match, player.PlayerId, -200, player.Money);
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "ForcedRelease",
+                            Message = $"Player {player.PlayerId} đã hết 3 lượt trong tù, tự động ra và trả $200"
+                        },
+                        match.MatchId, null));
+
+                    int fromJ = player.Position;
+                    int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
+                    player.Position = toJ;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+                        match.MatchId, null));
+
+                    HandleTile(match, player, toJ, dice1, dice2);
+                }
+                else
+                {
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+                        match.MatchId, null));
+
+                    Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} stays in jail, {player.JailTurnsRemaining} turns remaining");
+                }
+
+                return Wrap(MessageType.DiceRolledEvent, new { Success = true }, match.MatchId, body.PlayerId);
+            }
 
             int streak = GetStreak(match, player);
             streak = isDouble ? streak + 1 : 0;
@@ -577,7 +841,10 @@ namespace Server.Infrastructure.Network
 
             if (streak >= 3)
             {
+                int fromPos = player.Position;
                 SendToJail(match, player);
+
+                BroadcastPlayerJailed(match, player, "ThreeDoubles", fromPos);
 
                 BroadcastRoom(match.MatchId, Wrap(
                     MessageType.PlayerMovedEvent,
@@ -589,15 +856,18 @@ namespace Server.Infrastructure.Network
 
             int from = player.Position;
             int to = (from + dice1 + dice2) % match.Board.Count;
-
-            if (from + dice1 + dice2 >= match.Board.Count)
+            
+            bool passedGo = to < from; // Nếu vòng lại là đi qua GO
+            
+            player.Position = to;
+            
+            if (passedGo)
             {
+                int moneyBefore = player.Money;
                 player.Money += 200;
                 BroadcastMoneyChanged(match, player.PlayerId, 200, player.Money);
+                Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} passed GO, received $200");
             }
-            player.Position = to;
-
-            Console.WriteLine($"Player {player.PlayerId} rolled {dice1} : {dice2} ---- {player.Money} ---- {to}");
 
             BroadcastRoom(match.MatchId, Wrap(
                 MessageType.PlayerMovedEvent,
@@ -611,7 +881,6 @@ namespace Server.Infrastructure.Network
 
         private void HandleTile(MatchState match, PlayerState player, int tileIndex, int d1, int d2)
         {
-
             {
                 flow.HandlePlayerLanded(match, player);
 
@@ -754,7 +1023,23 @@ namespace Server.Infrastructure.Network
 
 
 
+            BroadcastRoom(
+                matchId,
+                Wrap(
+                    MessageType.PlayerSurrenderEvent,
+                    new PlayerSurrenderEvent { PlayerId = playerId },
+                    matchId,
+                    null
+                )
+            );
 
+            return Wrap(
+                MessageType.PlayerSurrenderEvent,
+                new PlayerSurrenderEvent { PlayerId = playerId },
+                matchId,
+                playerId
+            );
+        }
 
         private MessageEnvelope HandleBuyDecision(MessageEnvelope req)
         {
@@ -776,7 +1061,11 @@ namespace Server.Infrastructure.Network
 
                 return Wrap(
                     MessageType.PropertyUpdatedEvent,
-                    new { Success = false },
+                    new PropertyUpdatedEvent 
+                    { 
+                        Success = false,
+                        Message = "Đã từ chối mua/nâng cấp"
+                    },
                     match.MatchId,
                     req.PlayerId
                 );
@@ -784,13 +1073,84 @@ namespace Server.Infrastructure.Network
 
             int moneyBefore = player.Money;
 
+            // ✅ LƯU PENDING TILE INDEX TRƯỚC KHI RESET
+            int? pendingTile = match.PendingTileIndex;
+            
+            // ✅ CHECK TIỀN TRƯỚC KHI MUA
+            if (pendingTile.HasValue && match.Properties.TryGetValue(pendingTile.Value, out var property))
+            {
+                int requiredMoney = 0;
+                string actionName = "";
+                
+                if (property.PlayerOwnerId == null)
+                {
+                    // Mua đất mới
+                    requiredMoney = property.type switch
+                    {
+                        PropertyType.Property => property.landPrice,
+                        PropertyType.RailRoad => property.RailRoadBuyPrice,
+                        PropertyType.Utility => property.UtilityBuyPrice,
+                        _ => 0
+                    };
+                    actionName = "mua";
+                }
+                else if (property.PlayerOwnerId == player.PlayerId && property.type == PropertyType.Property && !property.hasHotel)
+                {
+                    // Nâng cấp
+                    requiredMoney = property.houseCount < 4 ? property.housePrice : property.hotelPrice;
+                    actionName = property.houseCount < 4 ? "xây nhà" : "xây khách sạn";
+                }
+                
+                if (player.Money < requiredMoney)
+                {
+                    match.WaitingForBuyDecision = false;
+                    match.PendingTileIndex = null;
+                    
+                    return Wrap(
+                        MessageType.PropertyUpdatedEvent,
+                        new PropertyUpdatedEvent
+                        {
+                            Success = false,
+                            PropertyTileIndex = pendingTile,
+                            PlayerId = player.PlayerId,
+                            Message = $"Không đủ tiền để {actionName}!\nCần: ${requiredMoney}\nCó: ${player.Money}\nThiếu: ${requiredMoney - player.Money}"
+                        },
+                        match.MatchId,
+                        req.PlayerId
+                    );
+                }
+            }
+
             bool bought = flow.BuyTile(match, player);
 
             match.WaitingForBuyDecision = false;
             match.PendingTileIndex = null;
 
             if (!bought)
-                return MakeError("Buy property failed");
+            {
+                return Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new PropertyUpdatedEvent
+                    {
+                        Success = false,
+                        PropertyTileIndex = pendingTile,
+                        PlayerId = player.PlayerId,
+                        Message = "Không thể mua/nâng cấp tài sản này!"
+                    },
+                    match.MatchId,
+                    req.PlayerId
+                );
+            }
+
+            int moneyChange = player.Money - moneyBefore;
+            BroadcastMoneyChanged(match, player.PlayerId, moneyChange, player.Money);
+
+            // ✅ LẤY PROPERTY THEO PENDING TILE INDEX
+            if (pendingTile.HasValue && 
+                match.Properties.TryGetValue(pendingTile.Value, out var boughtProperty))
+            {
+                BroadcastPropertyOwnershipChanged(match, boughtProperty);
+            }
 
             int moneyChange = player.Money - moneyBefore;
             BroadcastMoneyChanged(match, player.PlayerId, moneyChange, player.Money);
@@ -801,8 +1161,10 @@ namespace Server.Infrastructure.Network
                     MessageType.PropertyUpdatedEvent,
                     new PropertyUpdatedEvent
                     {
-                        PropertyTileIndex = player.Position,
-                        PlayerId = player.PlayerId
+                        Success = true,
+                        PropertyTileIndex = pendingTile ?? player.Position,
+                        PlayerId = player.PlayerId,
+                        Message = "Mua/nâng cấp thành công!"
                     },
                     match.MatchId,
                     null
@@ -811,7 +1173,11 @@ namespace Server.Infrastructure.Network
 
             return Wrap(
                 MessageType.PropertyUpdatedEvent,
-                new { Success = true },
+                new PropertyUpdatedEvent 
+                { 
+                    Success = true,
+                    Message = "Mua/nâng cấp thành công!"
+                },
                 match.MatchId,
                 req.PlayerId
             );
@@ -820,6 +1186,16 @@ namespace Server.Infrastructure.Network
         private void HandleChanceCard(MatchState match, PlayerState player)
         {
             var card = DrawChanceCard(match);
+
+            if (match.NextChanceCardIndex == -1)
+            {
+                match.NextChanceCardIndex = Random.Shared.Next(1, 17);
+            }
+            int cardIndex = match.NextChanceCardIndex;
+            
+            BroadcastDrawCard(match, player.PlayerId, "Chance", cardIndex, card.Description);
+
+            match.NextChanceCardIndex = (cardIndex % 16) + 1;
 
             switch (card.ChanceType)
             {
@@ -883,6 +1259,227 @@ namespace Server.Infrastructure.Network
                             MessageType.PlayerMovedEvent,
                             new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
                             match.MatchId, null));
+
+                        HandleTile(match, player, card.MoveToTileIndex, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.MoveToNearestUtility:
+                    {
+                        int target = match.Properties
+                            .Where(p => p.Value.type == PropertyType.Utility)
+                            .Select(p => p.Key)
+                            .Where(idx => idx > player.Position)
+                            .DefaultIfEmpty(
+                                match.Properties
+                                    .Where(p => p.Value.type == PropertyType.Utility)
+                                    .Select(p => p.Key)
+                                    .Min()
+                            )
+                            .First();
+
+                        player.Position = target;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, target, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.MoveToNearestRailroad:
+                    {
+                        int target = match.Properties
+                            .Where(p => p.Value.type == PropertyType.RailRoad)
+                            .Select(p => p.Key)
+                            .Where(idx => idx > player.Position)
+                            .DefaultIfEmpty(
+                                match.Properties
+                                    .Where(p => p.Value.type == PropertyType.RailRoad)
+                                    .Select(p => p.Key)
+                                    .Min()
+                            )
+                            .First();
+
+                        player.Position = target;
+
+                        BroadcastRoom(match.MatchId, Wrap(
+                            MessageType.PlayerMovedEvent,
+                            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                            match.MatchId, null));
+
+                        HandleTile(match, player, target, 0, 0);
+                        return;
+                    }
+
+                case ChanceCardType.GoToJail:
+                    SendToJail(match, player);
+                    break;
+            }
+
+            AutoLiquidateToCoverDebt(match, player);
+        }
+
+        private void HandleCommunityChestCard(MatchState match, PlayerState player)
+        {
+            var card = DrawCommunityChestCard(match);
+
+            if (match.NextCommunityChestCardIndex == -1)
+            {
+                match.NextCommunityChestCardIndex = Random.Shared.Next(1, 17);
+            }
+            int cardIndex = match.NextCommunityChestCardIndex;
+            
+            BroadcastDrawCard(match, player.PlayerId, "CommunityChest", cardIndex, card.Description);
+
+            match.NextCommunityChestCardIndex = (cardIndex % 16) + 1;
+
+            switch (card.ChestType)
+            {
+                case CommunityChestCardType.GetOutOfJailFree:
+                    player.hasGetOutOfJailCard = true;
+                    break;
+
+                case CommunityChestCardType.EarnMoney:
+                    player.Money += card.Amount;
+                    break;
+
+                case CommunityChestCardType.PayMoney:
+                    player.Money -= card.Amount;
+                    break;
+
+                case CommunityChestCardType.CollectFromEachPlayer:
+                    foreach (var other in match.Players.Values)
+                    {
+                        if (other.PlayerId == player.PlayerId || other.IsBankrupt) continue;
+                        other.Money -= card.Amount;
+                        player.Money += card.Amount;
+
+                        // nếu muốn chặt chẽ: gọi AutoLiquidate cho "other" nếu họ âm tiền
+                        AutoLiquidateToCoverDebt(match, other);
+                    }
+                    break;
+
+                case CommunityChestCardType.MoveToTile:
+                    player.Position = card.MoveToTileIndex;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = 0, Roll2 = 0 },
+                        match.MatchId, null));
+
+                    HandleTile(match, player, card.MoveToTileIndex, 0, 0);
+                    return;
+
+                case CommunityChestCardType.StreetRepairs:
+                    {
+                        int cost = 0;
+                        foreach (var prop in match.Properties.Values)
+                        {
+                            if (prop.PlayerOwnerId == player.PlayerId)
+                            {
+                                cost += prop.houseCount * 40;
+                                if (prop.hasHotel) cost += 115;
+                            }
+                        }
+                        player.Money -= cost;
+                        break;
+                    }
+
+                case CommunityChestCardType.GoToJail:
+                    SendToJail(match, player);
+                    break;
+            }
+
+            AutoLiquidateToCoverDebt(match, player);
+        }
+
+
+        private void AutoLiquidateToCoverDebt(MatchState match, PlayerState player)
+        {
+            if (player.Money >= 0) return;
+
+            var owned = match.Properties
+                .Where(kv => kv.Value.PlayerOwnerId == player.PlayerId)
+                .Select(kv => kv.Value)
+                .ToList();
+
+            foreach (var prop in owned)
+            {
+                if (player.Money >= 0) break;
+
+                if (prop.hasHotel)
+                {
+                    prop.hasHotel = false;
+                    prop.houseCount = Math.Min(prop.houseCount, 4);
+
+                    player.Money += prop.hotelPrice / 2;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PropertyUpdatedEvent,
+                        new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = (int)prop.PlayerOwnerId },
+                        match.MatchId, null));
+
+                    // ✅ BROADCAST OWNERSHIP CHANGE
+                    BroadcastPropertyOwnershipChanged(match, prop);
+                }
+            }
+
+            foreach (var prop in owned)
+            {
+                while (prop.houseCount > 0 && player.Money < 0)
+                {
+                    prop.houseCount--;
+                    player.Money += prop.housePrice / 2;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PropertyUpdatedEvent,
+                        new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = (int)prop.PlayerOwnerId },
+                        match.MatchId, null));
+
+                    // ✅ BROADCAST OWNERSHIP CHANGE
+                    BroadcastPropertyOwnershipChanged(match, prop);
+                }
+            }
+
+            foreach (var prop in owned)
+            {
+                if (player.Money >= 0) break;
+
+                if (prop.PlayerOwnerId != player.PlayerId) continue;
+
+                int sellValue = prop.type switch
+                {
+                    PropertyType.Property => prop.landPrice / 2,
+                    PropertyType.RailRoad => prop.RailRoadBuyPrice / 2,
+                    PropertyType.Utility => prop.UtilityBuyPrice / 2,
+                    _ => 0
+                };
+
+                prop.PlayerOwnerId = 0;
+                prop.houseCount = 0;
+                prop.hasHotel = false;
+
+                player.Money += sellValue;
+
+                BroadcastRoom(match.MatchId, Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = 0 },
+                    match.MatchId, null));
+
+                // ✅ BROADCAST OWNERSHIP CHANGE (property bị bán)
+                BroadcastPropertyOwnershipChanged(match, prop);
+            }
+
+            // 4) vẫn âm => phá sản
+            if (player.Money < 0)
+            {
+                player.IsBankrupt = true;
+                // (tuỳ bạn) có thể broadcast 1 event phá sản sau này
+            }
+        }
 
                         HandleTile(match, player, card.MoveToTileIndex, 0, 0);
                         return;
@@ -1091,6 +1688,10 @@ namespace Server.Infrastructure.Network
         {
             match.CurrentTurnPlayerId =
                 GetNextAlivePlayerId(match, match.CurrentTurnPlayerId);
+            match.CurrentTurnPlayerId = match.Players.Keys
+                .Where(id => id > match.CurrentTurnPlayerId)
+                .DefaultIfEmpty(match.Players.Keys.Min())
+                .First();
 
             BroadcastRoom(
                 match.MatchId,

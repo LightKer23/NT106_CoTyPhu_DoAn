@@ -16,6 +16,12 @@ namespace Server.Domain.GameLogic
 
         // ✅ CALLBACK async để hỗ trợ delay
         public Func<MatchState, int, string, int, string, Task>? OnDrawCard { get; set; }
+        
+        // ✅ CALLBACK để broadcast jail event
+        public Action<MatchState, PlayerState, string, int>? OnPlayerJailed { get; set; }
+        
+        // ✅ CALLBACK để broadcast movement từ card effect
+        public Action<MatchState, PlayerState, int, int>? OnPlayerMoved { get; set; }
 
         public GameFlowService()
         {
@@ -64,15 +70,20 @@ namespace Server.Domain.GameLogic
         //Mua đất
         public bool BuyTile(MatchState match, PlayerState player)
         {
-            int tileIndex = player.Position;
-
-            if (!match.Properties.TryGetValue(tileIndex, out var property))
+            // ✅ SỬ DỤNG PendingTileIndex THAY VÌ player.Position
+            if (!match.PendingTileIndex.HasValue)
             {
+                Console.WriteLine($"[BuyTile] FAILED: No PendingTileIndex");
                 return false;
             }
 
-            if (match.PendingTileIndex.HasValue && match.PendingTileIndex.Value != tileIndex)
+            int tileIndex = match.PendingTileIndex.Value;
+
+            Console.WriteLine($"[BuyTile] Player {player.PlayerId} buying tile {tileIndex}, current position={player.Position}, WaitingForBuyDecision={match.WaitingForBuyDecision}");
+
+            if (!match.Properties.TryGetValue(tileIndex, out var property))
             {
+                Console.WriteLine($"[BuyTile] FAILED: Tile {tileIndex} is not a property");
                 return false;
             }
 
@@ -100,6 +111,7 @@ namespace Server.Domain.GameLogic
                 if (property.type == PropertyType.Utility)
                     player.UtilityCount++;
 
+                Console.WriteLine($"[BuyTile] SUCCESS: Player {player.PlayerId} bought tile {tileIndex} for {price}");
                 return true;
             }
 
@@ -131,10 +143,12 @@ namespace Server.Domain.GameLogic
                         property.hasHotel = true;
                     }
 
+                    Console.WriteLine($"[BuyTile] SUCCESS: Player {player.PlayerId} upgraded tile {tileIndex}");
                     return true;
                 }
             }
 
+            Console.WriteLine($"[BuyTile] FAILED: No valid action (already owned by others or fully upgraded)");
             return false;
         }
 
@@ -158,7 +172,12 @@ namespace Server.Domain.GameLogic
 
                 case TileType.GoToJail:
                     {
+                        int fromPos = player.Position;
                         SendPlayerToJail(match, player);
+                        
+                        // ✅ CALLBACK để broadcast jail event
+                        OnPlayerJailed?.Invoke(match, player, "GoToJail", fromPos);
+                        
                         return;
                     }
 
@@ -342,9 +361,16 @@ namespace Server.Domain.GameLogic
         //Đi thẳng vào tù
         private void SendPlayerToJail(MatchState match, PlayerState player)
         {
+            int fromPos = player.Position;
+            
             // Ô Jail mặc định index = 10
             player.Position = 10;
             player.InJail = true;
+            
+            // ✅ SET SỐ LƯỢT CÒN LẠI = 3
+            player.JailTurnsRemaining = 3;
+            
+            Console.WriteLine($"[SendPlayerToJail] Player {player.PlayerId} sent to jail, turns remaining: 3");
         }
 
         //Trả tiền thuế

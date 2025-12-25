@@ -153,6 +153,19 @@ namespace Client.Services.Network
                 playerId: playerId,
                 ct: ct);
 
+        public Task<GetOutOfJailResponse> GetOutOfJailAsync(
+                int matchId,
+                int playerId,
+                string method,  
+                CancellationToken ct = default)
+                => RequestAsync<GetOutOfJailRequest, GetOutOfJailResponse>(
+                    MessageType.GetOutOfJailRequest,
+                    MessageType.GetOutOfJailRequest,  
+                    new GetOutOfJailRequest { Method = method },
+                    matchId: matchId,
+                    playerId: playerId,
+                    ct: ct);
+
         public Task EndTurnAsync(int matchId, int playerId)
         {
             var env = new MessageEnvelope
