@@ -26,9 +26,6 @@ namespace Common.Constracts
         ResetPasswordRequest,      // client gửi mật khẩu mới
         ResetPasswordResponse,     // server xác nhận đổi mật khẩu
 
-        GetMatchHistoryRequest,
-        GetMatchHistoryResponse,
-
         // ===== ROOM / MATCH =====
         CreateRoomRequest,         // tạo phòng chơi
         CreateRoomResponse,        // server trả info phòng

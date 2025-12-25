@@ -6,10 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="D:\3_HK1-N2\NT106\DoAn\2_test\CoTyPhu.zip" Link="CoTyPhu.zip" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />
     <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
   </ItemGroup>

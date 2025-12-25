@@ -15,10 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="D:\3_HK1-N2\NT106\DoAn\3\Domain\SettingForm.cs" Link="SettingForm.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.1" />
   </ItemGroup>
 

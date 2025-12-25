@@ -55,22 +55,22 @@ namespace Client.Views.Forms
 
                 var res = await ClientSession.Tcp.LoginAsync(username, password);
 
-                if (!res.Success || res.IDAccount == null)
+                if (!res.Success)
                 {
                     MessageBox.Show(res.Message ?? "Đăng nhập thất bại");
                     return;
                 }
 
-                ClientSession.SetLoginInfo(res.IDAccount.Value, res.Username, res.DisplayName, res.Email);
+                ClientSession.AccountID = res.IDAccount ?? 0;
 
                 MessageBox.Show("Đăng nhập thành công!");
 
-                Hide();
-
+                this.Hide();
                 var menuForm = new MenuForm();
                 menuForm.FormClosed += (s, args) =>
                 {
-                    Close();
+                    ClientSession.Disconnect();
+                    this.Close();
                 };
                 menuForm.Show();
             }
@@ -83,7 +83,6 @@ namespace Client.Views.Forms
                 btnLogin.Enabled = true;
             }
         }
-
 
         private void lkLblForgotPsswrd_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {

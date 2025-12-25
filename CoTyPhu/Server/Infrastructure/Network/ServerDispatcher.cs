@@ -168,8 +168,6 @@ namespace Server.Infrastructure.Network
                 MessageType.ForgotPasswordRequest => Task.FromResult(HandleForgotPassword(req)),
                 MessageType.VerifyOTPRequest => Task.FromResult(HandleVerifyOtp(req)),
                 MessageType.ResetPasswordRequest => Task.FromResult(HandleResetPassword(req)),
-                MessageType.GetMatchHistoryRequest => Task.FromResult(HandleGetMatchHistory(req)),
-
 
                 MessageType.CreateRoomRequest => Task.FromResult(HandleCreateRoom(req)),
                 MessageType.SearchRoomRequest => Task.FromResult(HandleSearchRoom(req)),
@@ -187,23 +185,6 @@ namespace Server.Infrastructure.Network
                 _ => Task.FromResult(MakeError("No handler for message type"))
             };
         }
-
-        private MessageEnvelope HandleGetMatchHistory(MessageEnvelope req)
-        {
-            var body = JsonSerializer.Deserialize<GetMatchHistoryRequest>(req.Payload, JsonOpt)!;
-
-            var history = _playerRepo.GetHistoryByAccount(body.AccountId);
-
-            return Wrap(
-                MessageType.GetMatchHistoryResponse,
-                new GetMatchHistoryResponse
-                {
-                    Success = true,
-                    History = history
-                }
-            );
-        }
-
 
         #region Auth Handlers
         private MessageEnvelope HandleLogin(MessageEnvelope req)
@@ -225,10 +206,7 @@ namespace Server.Infrastructure.Network
                 {
                     Success = ok,
                     Message = ok ? "Đăng nhập thành công" : "Sai tài khoản hoặc mật khẩu",
-                    IDAccount = id,
-                    Username = body.Username,
-                    DisplayName = ok ? _accountRepo.GetById(id.Value)?.DisplayName : null,
-                    Email = ok ? _accountRepo.GetById(id.Value)?.Email : null
+                    IDAccount = id
                 });
         }
 
@@ -462,27 +440,19 @@ namespace Server.Infrastructure.Network
             var body = JsonSerializer.Deserialize<JoinRoomRequest>(req.Payload, JsonOpt)!;
 
             if (!ServerState.Matches.TryGetValue(body.RoomID, out var match))
-                return Wrap(MessageType.JoinRoomResponse,
-                    new JoinRoomResponse { Success = false });
-
-            int slot;
+                return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
             lock (GetMatchLock(match.MatchId))
             {
                 if (match.IsMatch != 0)
-                    return Wrap(MessageType.JoinRoomResponse,
-                        new JoinRoomResponse { Success = false });
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
                 if (match.Players.Values.Any(p => p.CharacterIndex == body.CharacterIndex))
-                    return Wrap(MessageType.JoinRoomResponse,
-                        new JoinRoomResponse { Success = false });
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
-                slot = Enumerable.Range(1, 4)
-                    .FirstOrDefault(i => !match.Players.ContainsKey(i));
-
+                int slot = Enumerable.Range(1, 4).FirstOrDefault(i => !match.Players.ContainsKey(i));
                 if (slot == 0)
-                    return Wrap(MessageType.JoinRoomResponse,
-                        new JoinRoomResponse { Success = false });
+                    return Wrap(MessageType.JoinRoomResponse, new JoinRoomResponse { Success = false });
 
                 match.Players[slot] = new PlayerState
                 {
@@ -491,49 +461,27 @@ namespace Server.Infrastructure.Network
                     CharacterIndex = body.CharacterIndex
                 };
 
-                if (match.CurrentTurnPlayerId == 0)
-                {
-                    match.CurrentTurnPlayerId = 1;
+                _connections[body.AccountID] = ServerState.CurrentConnection!;
 
-                    _matchRepo.UpdateTurn(match.MatchId, 1);
-                }
+                if (match.CurrentTurnPlayerId == 0)
+                    match.CurrentTurnPlayerId = 1;
             }
 
-            _playerRepo.InsertPlayer(match.MatchId, slot, body.AccountID);
-            _matchRepo.IncreasePlayer(match.MatchId);
-
-            _connections[body.AccountID] = ServerState.CurrentConnection!;
+            _playerRepo.InsertPlayer(body.RoomID, body.AccountID, body.CharacterIndex);
+            _matchRepo.IncreasePlayerCount(body.RoomID);
 
             BroadcastRoom(
                 match.MatchId,
-                Wrap(
-                    MessageType.RoomUpdatedEvent,
-                    new RoomUpdatedEvent
-                    {
-                        RoomId = match.MatchId,
-                        HostPlayerId = match.CurrentTurnPlayerId
-                    },
-                    match.MatchId,
-                    null
-                )
+                Wrap(MessageType.RoomUpdatedEvent, new RoomUpdatedEvent { RoomId = match.MatchId }, match.MatchId, null)
             );
 
             return Wrap(
                 MessageType.JoinRoomResponse,
-                new JoinRoomResponse
-                {
-                    Success = true,
-                    IDPlayer = slot
-                },
+                new JoinRoomResponse { Success = true, IDPlayer = match.Players.Keys.Max() },
                 match.MatchId,
-                slot
+                null
             );
         }
-
-
-
-
-
 
         private MessageEnvelope HandleLeaveRoom(MessageEnvelope req)
         {
@@ -541,47 +489,39 @@ namespace Server.Infrastructure.Network
             int playerId = req.PlayerId!.Value;
 
             if (!ServerState.Matches.TryGetValue(matchId, out var match))
-                return MakeError("Match not found");
+                return MakeError("Không tìm thấy trận đấu.");
 
-            lock (GetMatchLock(matchId))
+            match.Players.Remove(playerId);
+
+            _playerRepo.DeletePlayer(matchId, playerId);
+            _matchRepo.DecreasePlayerCount(matchId);
+
+            if (match.Players.Count == 0)
             {
-                if (!match.Players.ContainsKey(playerId))
-                    return MakeError("Player not in room");
-
-                match.Players.Remove(playerId);
-
-                _playerRepo.DeletePlayer(matchId, playerId);
-                _matchRepo.DecreasePlayer(matchId);
-
-                if (match.Players.Count == 0)
-                {
-                    _matchRepo.DeleteMatch(matchId);
-                    ServerState.Matches.Remove(matchId);
-
-                    return Wrap(
-                        MessageType.PlayerLeftEvent,
-                        new PlayerLeftEvent { PlayerId = playerId },
-                        matchId,
-                        null
-                    );
-                }
-
-                if (playerId == match.CurrentTurnPlayerId)
-                {
-                    match.CurrentTurnPlayerId = match.Players.Keys.Min();
-                    _matchRepo.UpdateTurn(matchId, match.CurrentTurnPlayerId);
-                }
+                _matchRepo.EndMatch(matchId);
+                ServerState.Matches.Remove(matchId);
+                return Wrap(
+                    MessageType.PlayerLeftEvent,
+                    new PlayerLeftEvent { PlayerId = playerId },
+                    matchId,
+                    null
+                );
             }
 
-            BroadcastRoom
-            (matchId, Wrap(MessageType.RoomUpdatedEvent,
-                new RoomUpdatedEvent
-                {
-                    RoomId = matchId,
-                    HostPlayerId = match.CurrentTurnPlayerId 
-                },matchId, null)
-            );
+            if (match.CurrentTurnPlayerId == playerId)
+            {
+                match.CurrentTurnPlayerId = match.Players.Keys.Min();
+            }
 
+            BroadcastRoom(
+                matchId,
+                Wrap(
+                    MessageType.RoomUpdatedEvent,
+                    new RoomUpdatedEvent { RoomId = matchId },
+                    matchId,
+                    null
+                )
+            );
 
             return Wrap(
                 MessageType.PlayerLeftEvent,
@@ -590,34 +530,50 @@ namespace Server.Infrastructure.Network
                 null
             );
         }
-
-
         #endregion
 
         private MessageEnvelope HandleStartMatch(MessageEnvelope req)
         {
             if (req.MatchId == null || req.PlayerId == null)
-                return MakeError("Invalid start request");
+                return MakeError("Không thể bắt đầu trận đấu!");
+
+            if (req.PlayerId != 1)
+                return MakeError("Chỉ có chủ phòng mới có thể bắt đầu trận đấu!");
 
             var match = ServerState.Matches[req.MatchId.Value];
-
-            if (req.PlayerId != match.CurrentTurnPlayerId)
-                return MakeError("Only host can start");
 
             match.IsMatch = 1;
             match.CurrentTurnPlayerId = match.Players.Keys.Min();
 
-            _matchRepo.StartMatch(match.MatchId);
-            _playerRepo.SetAllPlaying(match.MatchId);
+            _matchRepo.StartMatch(match.MatchId); 
 
             BroadcastRoom(
                 match.MatchId,
-                Wrap(MessageType.StartMatchResponse, new StartMatchResponse { MatchId = match.MatchId }, match.MatchId, null)
+                Wrap(
+                    MessageType.StartMatchResponse,
+                    new StartMatchResponse { MatchId = match.MatchId },
+                    match.MatchId,
+                    null
+                )
             );
 
-            return Wrap(MessageType.StartMatchResponse, new { Success = true }, match.MatchId, null);
-        }
+            BroadcastRoom(
+                match.MatchId,
+                Wrap(
+                    MessageType.PlayerLeftEvent,
+                    new PlayerLeftEvent { PlayerId = match.CurrentTurnPlayerId },
+                    match.MatchId,
+                    null
+                )
+            );
 
+            return Wrap(
+                MessageType.StartMatchResponse,
+                new { Success = true },
+                match.MatchId,
+                null
+            );
+        }
 
         #region Broadcast Helpers
         private void BroadcastRoom(int matchId, MessageEnvelope env)
@@ -920,30 +876,38 @@ namespace Server.Infrastructure.Network
             if (!ServerState.Matches.TryGetValue(matchId, out var match))
                 return MakeError("Match not found");
 
-            int rank;
+            if (!match.Players.TryGetValue(playerId, out var player))
+                return MakeError("Player not found");
 
             lock (GetMatchLock(matchId))
             {
-                rank = match.Players.Count;
+                player.IsBankrupt = true;
+                player.Money = 0;
 
-                _playerRepo.EndPlayer(playerId, "Bankrupt", rank);
-
-                match.Players.Remove(playerId);
-
-                if (match.CurrentTurnPlayerId == playerId && match.Players.Count > 0)
+                foreach (var prop in match.Properties.Values)
                 {
-                    match.CurrentTurnPlayerId = match.Players.Keys.Min();
-                    _matchRepo.UpdateTurn(matchId, match.CurrentTurnPlayerId);
+                    if (prop.PlayerOwnerId == playerId)
+                    {
+                        prop.PlayerOwnerId = null;
+                        prop.houseCount = 0;
+                        prop.hasHotel = false;
+                    }
+                }
+
+                if (match.CurrentTurnPlayerId == playerId)
+                {
+                    flow.NextTurn(match);
                 }
             }
 
-            if (_playerRepo.CountAlive(matchId) <= 1)
-            {
-                _matchRepo.EndMatch(matchId);
-            }
-
             BroadcastRoom(
-                matchId, Wrap(MessageType.PlayerSurrenderEvent, new PlayerSurrenderEvent { PlayerId = playerId }, matchId, null)
+                matchId,
+                Wrap(
+                    MessageType.PlayerSurrenderEvent,
+                    new PlayerSurrenderEvent { PlayerId = playerId },
+                    matchId,
+                    null
+                )
             );
 
             return Wrap(
@@ -953,9 +917,6 @@ namespace Server.Infrastructure.Network
                 playerId
             );
         }
-
-
-
 
         private MessageEnvelope HandleBuyDecision(MessageEnvelope req)
         {
@@ -1395,10 +1356,14 @@ namespace Server.Infrastructure.Network
         }
 
 
-        private void FinishTurn(MatchState match)
+        private void FinishTurn(MatchState match, int d1, int d2)
         {
-            match.CurrentTurnPlayerId =
-                GetNextAlivePlayerId(match, match.CurrentTurnPlayerId);
+            if ((d1 == 1 && d2 == 1) || (d1 == 6 && d2 == 6)) return;
+
+            match.CurrentTurnPlayerId = match.Players.Keys
+                .Where(id => id > match.CurrentTurnPlayerId)
+                .DefaultIfEmpty(match.Players.Keys.Min())
+                .First();
 
             BroadcastRoom(
                 match.MatchId,
@@ -1413,31 +1378,6 @@ namespace Server.Infrastructure.Network
                 )
             );
         }
-
-
-
-        private int GetNextAlivePlayerId(MatchState match, int currentId)
-        {
-            var aliveIds = match.Players.Values
-                .Where(p => !p.IsBankrupt)
-                .OrderBy(p => p.PlayerId)
-                .Select(p => p.PlayerId)
-                .ToList();
-
-            if (aliveIds.Count == 0)
-                return 0; // game over (sau này xử)
-
-            // tìm người có id lớn hơn current
-            foreach (var id in aliveIds)
-            {
-                if (id > currentId)
-                    return id;
-            }
-
-            // quay vòng
-            return aliveIds[0];
-        }
-
 
 
         private MessageEnvelope HandleEndTurn(MessageEnvelope req)
@@ -1455,8 +1395,7 @@ namespace Server.Infrastructure.Network
             match.WaitingForBuyDecision = false;
             match.PendingTileIndex = null;
 
-            FinishTurn(match);
-
+            FinishTurn(match, 0, 0);
 
             return Wrap(
                 MessageType.EndTurnReponse,

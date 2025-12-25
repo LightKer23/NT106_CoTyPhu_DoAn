@@ -9,6 +9,5 @@ namespace Common.Contracts.Room
     public class RoomUpdatedEvent
     {
         public int RoomId { get; set; }
-        public int HostPlayerId { get; set; }   
     }
 }
