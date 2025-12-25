@@ -45,6 +45,9 @@ namespace Common.Constracts
         RoomUpdatedEvent,
         RoomStateEvent,            // cập nhật danh sách player trong phòng
 
+        PlayerSurrenderRequest,
+        PlayerSurrenderEvent,
+
         // ===== GAME ACTION (Client → Server) =====
         RollDiceRequest,           // yêu cầu tung xúc xắc
 
@@ -62,7 +65,16 @@ namespace Common.Constracts
         LeaveMatchRequest,         // thoát giữa trận
         PropertyUpdatedEvent,
 
+        PropertyOwnershipChangedEvent, // ✅ thay đổi quyền sở hữu/mức độ đất (mua, xây nhà, khách sạn)
+
         EndTurnReponse,
+
+        // ===== CHAT =====
+        SendChatMessageRequest,    // gửi tin nhắn chat
+        ChatMessageEvent,          // broadcast tin nhắn chat
+
+        // ===== CARD DRAW =====
+        DrawCardEvent,             // server broadcast khi rút thẻ Cơ hội/Khí vận
 
         // ===== GAME EVENT (Server → Client) =====
         DiceRolledEvent,         // kết quả tung xúc xắc
