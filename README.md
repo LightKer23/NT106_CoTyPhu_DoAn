@@ -64,10 +64,50 @@ Trò chơi xoay quanh bàn cờ ***Cờ Tỷ Phú (Monopoly)***, nơi người c
 * ***Xử lý phá sản & kết thúc trận đấu:***  Khi người chơi không còn khả năng thanh toán, hệ thống tự động xử lý ***phá sản*** và xác định ***người chiến thắng***.
 * ***Lưu lịch sử trận đấu:*** Kết quả trận đấu được lưu vào ***cơ sở dữ liệu*** để phục vụ chức năng xem lại lịch sử.
 ## 📸 Hình Ảnh Demo (Screenshots)
-| Màn hình Đăng nhập | Giao diện Chơi |
-| :---: | :---: |
-| ![](Assets/Sprites/MeoNo_image/MenuLogin.png) | ![](Assets/Sprites/MeoNo_image/GamePlay.jpg) |
 
-| Hiệu ứng Xào bài | Hiệu ứng Nổ |
+### 🔐 Đăng nhập & Menu
+| Màn hình Đăng nhập | Menu chính |
 | :---: | :---: |
-| ![](Assets/Sprites/MeoNo_image/HieuUngShuffle.jpg) | ![](Assets/Sprites/MeoNo_image/HieuUngNo.jpg) |
+| ![](img/DangNhap.png) | ![](img/Menu.png) |
+
+---
+
+### 📝 Đăng ký & Quên mật khẩu
+| Đăng ký | Quên mật khẩu |
+| :---: | :---: |
+| ![](img/DangKi.png) | ![](img/QuenMatKhau.png) |
+
+---
+
+### 🔑 Xác thực OTP & Đổi mật khẩu
+| Nhập OTP | Đổi mật khẩu |
+| :---: | :---: |
+| ![](img/OTP.png) | ![](img/DoiMatKhau.png) |
+
+---
+
+### 🎮 Chọn chế độ & Nhân vật
+| Chơi với người | Chọn nhân vật |
+| :---: | :---: |
+| ![](img/ChoiVoiNguoi.png) | ![](img/ChonNhanVat.png) |
+
+---
+
+### ⏳ Phòng chờ & Lịch sử đấu
+| Phòng chờ | Lịch sử trận đấu |
+| :---: | :---: |
+| ![](img/PhongCho.png) | ![](img/LichSu.png) |
+
+---
+
+### 🏦 Bàn cờ Monopoly
+| Giao diện bàn cờ |
+| :---: |
+| ![](img/BanCo.png) |
+
+---
+
+### ⚙️ Cài đặt
+| Cài đặt tài khoản |
+| :---: |
+| ![](img/Caidat.png) |
