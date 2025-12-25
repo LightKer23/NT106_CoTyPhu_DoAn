@@ -1,0 +1,15 @@
+// STEP 3: TcpClientService - Add GetOutOfJailAsync
+// Add this method to TcpClientService.cs:
+
+public Task<GetOutOfJailResponse> GetOutOfJailAsync(
+    int matchId, 
+    int playerId, 
+    string method,  // "PayMoney" | "UseCard"
+    CancellationToken ct = default)
+    => RequestAsync<GetOutOfJailRequest, GetOutOfJailResponse>(
+        MessageType.GetOutOfJailRequest,
+        MessageType.GetOutOfJailRequest,  // Response uses same message type
+        new GetOutOfJailRequest { Method = method },
+        matchId: matchId,
+        playerId: playerId,
+        ct: ct);

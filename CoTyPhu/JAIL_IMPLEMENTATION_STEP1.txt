@@ -1,0 +1,91 @@
+// JAIL SYSTEM IMPLEMENTATION GUIDE
+// ===================================
+
+// 1. SERVER - HandleRollDice jail logic (ServerDispatcher.cs)
+// Thay thế đoạn jail handling hiện tại bằng code sau:
+
+if (player.InJail)
+{
+    // ✅ GIẢM SỐ LƯỢT CÒN LẠI
+    player.JailTurnsRemaining--;
+    
+    Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} in jail, turns remaining: {player.JailTurnsRemaining}, rolled: {dice1}, {dice2}");
+    
+    if (isDouble)
+    {
+        // ✅ CASE 1: TUNG ĐƯỢC XÚC XẮC ĐÔI → RA TÙ
+        player.InJail = false;
+        player.JailTurnsRemaining = 0;
+        SetStreak(match, player, 0);
+
+        // Broadcast released event
+        BroadcastRoom(match.MatchId, Wrap(
+            MessageType.PlayerReleasedFromJailEvent,
+            new PlayerReleasedFromJailEvent
+            {
+                PlayerId = player.PlayerId,
+                Method = "RollDice",
+                Message = $"Player {player.PlayerId} tung được xúc xắc đôi ({dice1}, {dice2}) và ra tù!"
+            },
+            match.MatchId, null));
+
+        // Di chuyển sau khi ra tù
+        int fromJ = player.Position;
+        int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
+        player.Position = toJ;
+
+        BroadcastRoom(match.MatchId, Wrap(
+            MessageType.PlayerMovedEvent,
+            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+            match.MatchId, null));
+
+        HandleTile(match, player, toJ, dice1, dice2);
+    }
+    else if (player.JailTurnsRemaining <= 0)
+    {
+        // ✅ CASE 2: HẾT 3 LƯỢT → TỰ ĐỘNG RA TÙ VÀ TRẢ $200
+        player.InJail = false;
+        player.JailTurnsRemaining = 0;
+        
+        int moneyBefore = player.Money;
+        player.Money -= 200;
+        BroadcastMoneyChanged(match, player.PlayerId, -200, player.Money);
+
+        // Broadcast released event
+        BroadcastRoom(match.MatchId, Wrap(
+            MessageType.PlayerReleasedFromJailEvent,
+            new PlayerReleasedFromJailEvent
+            {
+                PlayerId = player.PlayerId,
+                Method = "ForcedRelease",
+                Message = $"Player {player.PlayerId} đã hết 3 lượt trong tù, tự động ra và trả $200"
+            },
+            match.MatchId, null));
+
+        // Di chuyển sau khi ra tù
+        int fromJ = player.Position;
+        int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
+        player.Position = toJ;
+
+        BroadcastRoom(match.MatchId, Wrap(
+            MessageType.PlayerMovedEvent,
+            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+            match.MatchId, null));
+
+        HandleTile(match, player, toJ, dice1, dice2);
+    }
+    else
+    {
+        // ✅ CASE 3: KHÔNG RA XÚC XẮC ĐÔI VÀ CÒN LƯỢT → Ở LẠI TÙ
+        BroadcastRoom(match.MatchId, Wrap(
+            MessageType.PlayerMovedEvent,
+            new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+            match.MatchId, null));
+            
+        Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} stays in jail, {player.JailTurnsRemaining} turns remaining");
+    }
+
+    return Wrap(MessageType.DiceRolledEvent, new { Success = true }, match.MatchId, body.PlayerId);
+}
+
+// ... (phần còn lại của HandleRollDice giữ nguyên)

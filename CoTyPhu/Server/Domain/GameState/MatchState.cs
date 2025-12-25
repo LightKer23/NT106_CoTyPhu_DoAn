@@ -36,6 +36,9 @@ namespace Server.Domain.GameState
         //Index ô Server đợi người chơi quyết định mua hay không
         public int? PendingTileIndex { get; set; }
 
+        public int NextChanceCardIndex { get; set; } = -1;
+        public int NextCommunityChestCardIndex { get; set; } = -1;
+
         public MatchState()
         {
             Properties = CreateInitialProperties();

@@ -1,0 +1,59 @@
+// STEP 4: Fix Property Ownership - Only owner can upgrade
+// Replace HandleTile logic in ServerDispatcher.cs:
+
+// ✅ CHỈ CHỦ NHÀ MỚI NHẬN ĐƯỢC THÔNG BÁO NÂNG CẤP
+if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
+{
+    if (!match.Properties.TryGetValue(tileIndex, out var property))
+        goto END_TURN;
+
+    if (!_connections.TryGetValue(player.AccountId, out var conn))
+        goto END_TURN;
+
+    bool isUpgrade = property.PlayerOwnerId == player.PlayerId &&
+        property.type == PropertyType.Property && !property.hasHotel;
+
+    // ✅ NẾU LÀ NÂNG CẤP MÀ KHÔNG PHẢI CHỦ → SKIP
+    if (property.PlayerOwnerId != null && 
+        property.PlayerOwnerId != player.PlayerId)
+    {
+        // Ô đất của người khác, không hỏi mua
+        goto END_TURN;
+    }
+
+    int price;
+
+    if (isUpgrade)
+    {
+        price = property.houseCount < 4
+            ? property.housePrice
+            : property.hotelPrice;
+    }
+    else
+    {
+        price = property.type switch
+        {
+            PropertyType.Property => property.landPrice,
+            PropertyType.RailRoad => property.RailRoadBuyPrice,
+            PropertyType.Utility => property.UtilityBuyPrice,
+            _ => 0
+        };
+    }
+
+    _ = conn.SendAsync(
+        Wrap(
+            MessageType.AskBuyPropertyEvent,
+            new AskBuyPropertyEvent
+            {
+                TileIndex = tileIndex,
+                Name = ServerState.Board[tileIndex].name,
+                Price = price,
+                IsAuction = isUpgrade 
+            },
+            match.MatchId,
+            player.PlayerId
+        )
+    );
+
+    return;
+}

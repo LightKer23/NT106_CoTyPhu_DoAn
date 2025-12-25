@@ -36,7 +36,7 @@ namespace Server.Domain.GameState.Board
                 {
                     Amount = 15
                 },
-                new Card("Di den o Nguyen Thi Phuong", ChanceCardType.MoveToTile)
+                new Card("Di den o Nguyen Tri Phuong", ChanceCardType.MoveToTile)
                 {
                     MoveToTileIndex = 24
                 },
