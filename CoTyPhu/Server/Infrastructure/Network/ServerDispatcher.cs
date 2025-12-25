@@ -180,6 +180,7 @@ namespace Server.Infrastructure.Network
                 MessageType.EndTurnRequest => Task.FromResult(HandleEndTurn(req)),
                 MessageType.PlayerSurrenderRequest => Task.FromResult(HandlePlayerSurrender(req)),
                 MessageType.SendChatMessageRequest => Task.FromResult(HandleSendChatMessage(req)),
+                MessageType.GetOutOfJailRequest => Task.FromResult(HandleGetOutOfJail(req)),
 
                 _ => Task.FromResult(MakeError("No handler for message type"))
             };
@@ -332,6 +333,108 @@ namespace Server.Infrastructure.Network
             );
         }
 
+        private MessageEnvelope HandleGetOutOfJail(MessageEnvelope req)
+        {
+            var body = JsonSerializer.Deserialize<GetOutOfJailRequest>(req.Payload, JsonOpt)!;
+
+            if (!req.MatchId.HasValue || !req.PlayerId.HasValue)
+                return MakeError("Invalid GetOutOfJail request");
+
+            if (!ServerState.Matches.TryGetValue(req.MatchId.Value, out var match))
+                return MakeError("Match not found");
+
+            if (!match.Players.TryGetValue(req.PlayerId.Value, out var player))
+                return MakeError("Player not found");
+
+            if (!player.InJail)
+                return MakeError("Player is not in jail");
+
+            Console.WriteLine($"[HandleGetOutOfJail] Player {player.PlayerId} method: {body.Method}");
+
+            switch (body.Method)
+            {
+                case "PayMoney":
+                    if (player.Money < 200)
+                    {
+                        return Wrap(
+                            MessageType.ErrorResponse,
+                            new { Message = "Không đủ $200 để ra tù!" },
+                            match.MatchId,
+                            player.PlayerId
+                        );
+                    }
+
+                    player.Money -= 200;
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    BroadcastMoneyChanged(match, player.PlayerId, -200, player.Money);
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "PayMoney",
+                            Message = $"Player {player.PlayerId} đã trả $200 để ra tù"
+                        },
+                        match.MatchId, null));
+
+                    return Wrap(
+                        MessageType.GetOutOfJailRequest,
+                        new GetOutOfJailResponse
+                        {
+                            Success = true,
+                            Method = "PayMoney",
+                            Message = "Đã trả $200 để ra tù. Hãy tung xúc xắc!",
+                            MoneyPaid = 200
+                        },
+                        match.MatchId,
+                        player.PlayerId
+                    );
+
+                case "UseCard":
+                    if (!player.hasGetOutOfJailCard)
+                    {
+                        return Wrap(
+                            MessageType.ErrorResponse,
+                            new { Message = "Bạn không có thẻ ra tù!" },
+                            match.MatchId,
+                            player.PlayerId
+                        );
+                    }
+
+                    player.hasGetOutOfJailCard = false;
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "UseCard",
+                            Message = $"Player {player.PlayerId} đã sử dụng thẻ ra tù"
+                        },
+                        match.MatchId, null));
+
+                    return Wrap(
+                        MessageType.GetOutOfJailRequest,
+                        new GetOutOfJailResponse
+                        {
+                            Success = true,
+                            Method = "UseCard",
+                            Message = "Đã sử dụng thẻ ra tù. Hãy tung xúc xắc!",
+                            UsedCard = true
+                        },
+                        match.MatchId,
+                        player.PlayerId
+                    );
+
+                default:
+                    return MakeError("Invalid method");
+            }
+        }
         private MessageEnvelope HandleJoinRoom(MessageEnvelope req)
         {
             var body = JsonSerializer.Deserialize<JoinRoomRequest>(req.Payload, JsonOpt)!;
@@ -444,7 +547,6 @@ namespace Server.Infrastructure.Network
 
             _matchRepo.StartMatch(match.MatchId); 
 
-            // ✅ BROADCAST START MATCH
             BroadcastRoom(
                 match.MatchId,
                 Wrap(
@@ -455,7 +557,6 @@ namespace Server.Infrastructure.Network
                 )
             );
 
-            // ✅ BROADCAST LƯỢT ĐẦU TIÊN
             BroadcastRoom(
                 match.MatchId,
                 Wrap(
@@ -520,7 +621,6 @@ namespace Server.Infrastructure.Network
             ));
         }
 
-        // ✅ BROADCAST PROPERTY OWNERSHIP CHANGED
         private void BroadcastPropertyOwnershipChanged(MatchState match, PropertyState property)
         {
             string propertyType = property.type switch
@@ -546,7 +646,6 @@ namespace Server.Infrastructure.Network
             ));
         }
 
-        // ✅ BROADCAST PLAYER JAILED
         private void BroadcastPlayerJailed(MatchState match, PlayerState player, string reason, int fromTile)
         {
             BroadcastRoom(match.MatchId, Wrap(
@@ -585,10 +684,55 @@ namespace Server.Infrastructure.Network
 
             if (player.InJail)
             {
+                player.JailTurnsRemaining--;
+
+                Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} in jail, turns remaining: {player.JailTurnsRemaining}, rolled: {dice1}, {dice2}");
+
                 if (isDouble)
                 {
                     player.InJail = false;
+                    player.JailTurnsRemaining = 0;
                     SetStreak(match, player, 0);
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "RollDice",
+                            Message = $"Player {player.PlayerId} tung được xúc xắc đôi ({dice1}, {dice2}) và ra tù!"
+                        },
+                        match.MatchId, null));
+
+                    int fromJ = player.Position;
+                    int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
+                    player.Position = toJ;
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerMovedEvent,
+                        new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
+                        match.MatchId, null));
+
+                    HandleTile(match, player, toJ, dice1, dice2);
+                }
+                else if (player.JailTurnsRemaining <= 0)
+                {
+                    player.InJail = false;
+                    player.JailTurnsRemaining = 0;
+
+                    int moneyBefore = player.Money;
+                    player.Money -= 200;
+                    BroadcastMoneyChanged(match, player.PlayerId, -200, player.Money);
+
+                    BroadcastRoom(match.MatchId, Wrap(
+                        MessageType.PlayerReleasedFromJailEvent,
+                        new PlayerReleasedFromJailEvent
+                        {
+                            PlayerId = player.PlayerId,
+                            Method = "ForcedRelease",
+                            Message = $"Player {player.PlayerId} đã hết 3 lượt trong tù, tự động ra và trả $200"
+                        },
+                        match.MatchId, null));
 
                     int fromJ = player.Position;
                     int toJ = (fromJ + dice1 + dice2) % match.Board.Count;
@@ -607,6 +751,8 @@ namespace Server.Infrastructure.Network
                         MessageType.PlayerMovedEvent,
                         new PlayerMoveEvent { PlayerId = player.PlayerId, Roll1 = dice1, Roll2 = dice2 },
                         match.MatchId, null));
+
+                    Console.WriteLine($"[HandleRollDice] Player {player.PlayerId} stays in jail, {player.JailTurnsRemaining} turns remaining");
                 }
 
                 return Wrap(MessageType.DiceRolledEvent, new { Success = true }, match.MatchId, body.PlayerId);
@@ -621,7 +767,6 @@ namespace Server.Infrastructure.Network
                 int fromPos = player.Position;
                 SendToJail(match, player);
 
-                // ✅ BROADCAST JAIL EVENT (3 xúc xắc đôi)
                 BroadcastPlayerJailed(match, player, "ThreeDoubles", fromPos);
 
                 BroadcastRoom(match.MatchId, Wrap(
@@ -635,12 +780,10 @@ namespace Server.Infrastructure.Network
             int from = player.Position;
             int to = (from + dice1 + dice2) % match.Board.Count;
             
-            // ✅ CHECK ĐI QUA Ô START (TILE 0)
             bool passedGo = to < from; // Nếu vòng lại là đi qua GO
             
             player.Position = to;
             
-            // ✅ CỘNG $200 KHI ĐI QUA Ô START
             if (passedGo)
             {
                 int moneyBefore = player.Money;
