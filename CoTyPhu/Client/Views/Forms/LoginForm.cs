@@ -65,13 +65,10 @@ namespace Client.Views.Forms
 
                 MessageBox.Show("Đăng nhập thành công!");
 
-                Hide();
+
+                this.Hide();
 
                 var menuForm = new MenuForm();
-                menuForm.FormClosed += (s, args) =>
-                {
-                    Close();
-                };
                 menuForm.Show();
             }
             catch (Exception ex)

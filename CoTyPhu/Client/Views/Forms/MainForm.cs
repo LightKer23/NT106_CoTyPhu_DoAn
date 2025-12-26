@@ -20,30 +20,38 @@ namespace Client.Views.Forms
             21, 23, 24, 25, 26, 27, 28, 29, 31, 32, 34, 35, 37, 39
         };
 
+        private static readonly HashSet<int> ChanceTiles = new HashSet<int> { 7, 22, 36 };
+        private static readonly HashSet<int> CommunityChestTiles = new HashSet<int> { 2, 17, 33 };
+
+        private int _nextChanceCardIndex = -1;
+        private int _nextCommunityChestCardIndex = -1;
+
+
         private Dictionary<int, PictureBox> _tileMap;
         private Dictionary<int, Panel> _tileTokenPanels;
         private Dictionary<int, PictureBox> _playerTokens;
         private Dictionary<int, int> _playerTile;
-        private Dictionary<int, Label> _propertyOwnershipLabels = new();
+
+        private Dictionary<int, Label> _propertyOwnershipLabels = new Dictionary<int, Label>();
 
         private Dictionary<int, bool> _playerInJail = new();
         private Dictionary<int, Label> _jailIndicators = new();
 
-
-        // ✅ TRACKING PLAYER MONEY
         private Dictionary<int, int> _playerMoney = new Dictionary<int, int>();
         private Dictionary<int, string> _playerNames = new Dictionary<int, string>();
+        private bool _isShowingCard = false;
 
-        // ✅ ANIMATION STATE
         private bool _isRollingDice = false;
         private System.Windows.Forms.Timer _diceAnimationTimer;
         private Random _random = new Random();
         private int _animationTicks = 0;
 
-        // ✅ LƯU KẾT QUẢ XÚC XẮC TỪ SERVER
         private int _finalDice1 = 0;
         private int _finalDice2 = 0;
         private int _currentPlayerId = 0;
+
+        private int _cardMovementFromTile = -1;
+        private int _cardMovementToTile = -1;
 
         private const int TokenAreaW = 70;
         private const int TokenAreaH = 84;
@@ -127,9 +135,35 @@ namespace Client.Views.Forms
 
                 if (_playerTile.TryGetValue(_currentPlayerId, out int fromTile))
                 {
-                    int steps = _finalDice1 + _finalDice2;
-                    int toTile = (fromTile + steps) % 40;
-                    _ = AnimateTokenMovement(_currentPlayerId, fromTile, toTile, steps);
+                    int steps;
+                    int toTile;
+
+                    if (_finalDice1 == 0 && _finalDice2 == 0)
+                    {
+                        if (_cardMovementToTile >= 0)
+                        {
+                            int actualFrom = _cardMovementFromTile >= 0 ? _cardMovementFromTile : fromTile;
+                            toTile = _cardMovementToTile;
+
+                            if (toTile >= actualFrom)
+                            {
+                                steps = toTile - actualFrom;
+                            }
+                            else
+                            {
+                                steps = (40 - actualFrom) + toTile;
+                            }
+
+                            _ = AnimateTokenMovement(_currentPlayerId, actualFrom, toTile, steps);
+                        }
+                        return;
+                    }
+                    else
+                    {
+                        steps = _finalDice1 + _finalDice2;
+                        toTile = (fromTile + steps) % 40;
+                        _ = AnimateTokenMovement(_currentPlayerId, fromTile, toTile, steps);
+                    }
                 }
             }
         }
@@ -221,6 +255,7 @@ namespace Client.Views.Forms
 
                     _playerTokens[p.PlayerId] = token;
                     _playerTile[p.PlayerId] = 0;
+                    _playerInJail[p.PlayerId] = false;
 
                     _playerMoney[p.PlayerId] = 1500;
                     _playerNames[p.PlayerId] = p.DisplayName ?? $"Player {p.PlayerId}";
@@ -239,6 +274,57 @@ namespace Client.Views.Forms
             catch (Exception ex)
             {
                 MessageBox.Show("Lỗi: " + ex.Message);
+            }
+        }
+
+        private async void ShowCardWithDelay(string cardType, int cardIndex, int delayMs = 300)
+        {
+            try
+            {
+                _isShowingCard = true;
+
+                await Task.Delay(delayMs);
+
+                string prefix = cardType.Equals("Chance", StringComparison.OrdinalIgnoreCase) ? "CH" : "KV";
+
+
+                string resourceName = $"{prefix}_{cardIndex}";
+                lbHistory.Items.Add($"[ShowCard] Load {resourceName}");
+
+                var obj = Properties.Resources.ResourceManager.GetObject(resourceName);
+                if (obj is not Image img)
+                {
+                    return;
+                }
+                if (pbTile.InvokeRequired)
+                {
+                    pbTile.BeginInvoke(new Action(() =>
+                    {
+                        pbTile.Visible = true;
+                        pbTile.BringToFront();
+                        pbTile.Image = img;
+                        pbTile.SizeMode = PictureBoxSizeMode.StretchImage;
+                        pbTile.Refresh();
+                    }));
+                }
+                else
+                {
+                    pbTile.Visible = true;
+                    pbTile.BringToFront();
+                    pbTile.Image = img;
+                    pbTile.SizeMode = PictureBoxSizeMode.StretchImage;
+                    pbTile.Refresh();
+                }
+
+
+                await Task.Delay(2500);
+            }
+            catch (Exception ex)
+            {
+            }
+            finally
+            {
+                _isShowingCard = false;
             }
         }
 
@@ -274,7 +360,7 @@ namespace Client.Views.Forms
             await ClientSession.Tcp.BuyDecisionAsync(
                 ClientSession.MatchID,
                 ClientSession.PlayerID,
-                tileIndex: 5,
+                tileIndex: _pendingBuyTileIndex,
                 accept: true
             );
             btnUpgrade.Visible = false;
@@ -286,7 +372,7 @@ namespace Client.Views.Forms
             await ClientSession.Tcp.BuyDecisionAsync(
                 ClientSession.MatchID,
                 ClientSession.PlayerID,
-                tileIndex: 5,
+                tileIndex: _pendingBuyTileIndex,
                 accept: true
             );
 
@@ -315,7 +401,6 @@ namespace Client.Views.Forms
             }
             catch (Exception ex)
             {
-                lbHistory.Items.Add($"[Lỗi] Không thể gửi tin nhắn: {ex.Message}");
             }
         }
 
@@ -424,6 +509,9 @@ namespace Client.Views.Forms
             }
         }
 
+
+
+
         private bool _surrenderSent = false;
 
         private async void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
@@ -440,7 +528,7 @@ namespace Client.Views.Forms
             {
                 await ClientSession.Tcp.PlayerSurrenderAsync(ClientSession.MatchID, ClientSession.PlayerID);
 
-                MenuForm mainMenu = new MenuForm();
+                MenuForm mainMenu = new MenuForm(ClientSession.AccountID);
                 mainMenu.Show();
                 this.Hide();
             }
@@ -501,6 +589,48 @@ namespace Client.Views.Forms
             {
                 ShowPropertyCard(toTile);
             }
+        }
+
+        private async Task AnimateToJail(int playerId, int fromTile, int jailTile, string reason)
+        {
+            if (!_playerTokens.ContainsKey(playerId))
+                return;
+
+            lbHistory.Items.Add($"🚔 Player {playerId} bị bắt vào tù! Lý do: {GetJailReasonText(reason)}");
+
+            var token = _playerTokens[playerId];
+            for (int i = 0; i < 3; i++)
+            {
+                token.Visible = false;
+                await Task.Delay(150);
+                token.Visible = true;
+                await Task.Delay(150);
+            }
+
+            int slot = FindAvailableSlot(jailTile, playerId);
+            PlaceTokenOnTile(playerId, jailTile, slot);
+
+            UpdateJailIndicator(playerId, true);
+
+            for (int i = 0; i < 2; i++)
+            {
+                token.BackColor = Color.Red;
+                await Task.Delay(200);
+                token.BackColor = Color.Transparent;
+                await Task.Delay(200);
+            }
+        }
+
+        private string GetJailReasonText(string reason)
+        {
+            return reason switch
+            {
+                "GoToJail" => "Đi trúng ô 'Vào Tù'",
+                "ThreeDoubles" => "Tung 3 xúc xắc đôi liên tiếp",
+                "ChanceCard" => "Rút thẻ Cơ Hội 'Vào Tù'",
+                "CommunityChestCard" => "Rút thẻ Khí Vận 'Vào Tù'",
+                _ => reason
+            };
         }
 
         private int FindAvailableSlot(int tileIndex, int currentPlayerId)
@@ -574,7 +704,8 @@ namespace Client.Views.Forms
                             _finalDice2 = data.Roll2;
                             _currentPlayerId = data.PlayerId;
 
-                            lbHistory.Items.Add($"Player {data.PlayerId} đang tung xúc xắc...");
+                            _cardMovementFromTile = data.FromTile ?? -1;
+                            _cardMovementToTile = data.ToTile ?? -1;
 
                             _isRollingDice = true;
                             _animationTicks = 0;
@@ -593,14 +724,15 @@ namespace Client.Views.Forms
                                 ? $"+${data.MoneyChange}"
                                 : $"-${Math.Abs(data.MoneyChange)}";
 
-                            lbHistory.Items.Add($"Player {data.PlayerId} {changeText} (Còn lại: ${data.CurrentMoney})");
-
                             break;
                         }
 
                     case MessageType.AskBuyPropertyEvent:
                         {
                             var data = JsonSerializer.Deserialize<AskBuyPropertyEvent>(env.Payload, JsonOpt);
+
+                            _pendingBuyTileIndex = data.TileIndex;
+
                             if (data.IsAuction == false)
                             {
                                 lbHistory.Items.Add($"Server hỏi mua đất {data.Name} : {data.TileIndex} : {data.Price}");
@@ -640,7 +772,6 @@ namespace Client.Views.Forms
                                 break;
                             }
 
-                            lbHistory.Items.Add("Property đã cập nhật");
                             btnEndTurn.Enabled = true;
                             break;
                         }
@@ -667,6 +798,26 @@ namespace Client.Views.Forms
                             break;
                         }
 
+
+                    case MessageType.DrawCardEvent:
+                        {
+                            var data = JsonSerializer.Deserialize<DrawCardEvent>(env.Payload, JsonOpt);
+
+                            lbHistory.Items.Add($"Player {data.PlayerId} rút thẻ {(data.CardType == "Chance" ? "Cơ Hội" : "Khí Vận")}: {data.Description}");
+
+                            // ✅ CHỈ HIỂN THỊ THẺ CHO NGƯỜI CHƠI HIỆN TẠI
+                            if (data.PlayerId == ClientSession.PlayerID)
+                            {
+                                ShowCardWithDelay(data.CardType, data.CardIndex, delayMs: 500);
+                            }
+                            else
+                            {
+                            }
+
+
+                            break;
+                        }
+
                     case MessageType.MatchEndedEvent:
                         {
                             var ev = JsonSerializer.Deserialize<MatchEndedEvent>(env.Payload, JsonOpt);
@@ -683,7 +834,7 @@ namespace Client.Views.Forms
                                 );
                             }
 
-                            this.Close();
+                            this.Hide();
                             break;
                         }
 
@@ -712,6 +863,8 @@ namespace Client.Views.Forms
             });
         }
 
+        private int _pendingBuyTileIndex = -1;
+
         private void btnExit_Click(object sender, EventArgs e)
         {
             var confirm = MessageBox.Show(
@@ -723,33 +876,29 @@ namespace Client.Views.Forms
 
             if (confirm == DialogResult.Yes)
             {
-                this.Close();
+                this.Hide();
             }
         }
 
 
-        private void UpdatePropertyOwnership(
-    int tileIndex,
-    int? ownerId,
-    int houseCount,
-    bool hasHotel,
-    string propertyType)
+        private void UpdatePropertyOwnership(int tileIndex, int? ownerId, int houseCount, bool hasHotel, string propertyType)
         {
             if (!_propertyOwnershipLabels.TryGetValue(tileIndex, out var label))
                 return;
 
-            if (ownerId == null || ownerId == 0)
+            if (ownerId == null)
             {
+                // Chưa có chủ
                 label.Visible = false;
                 return;
             }
 
-            Color ownerColor = ownerId switch
+            Color ownerColor = ownerId.Value switch
             {
-                1 => Color.Red,
-                2 => Color.Blue,
-                3 => Color.Green,
-                4 => Color.Gold,
+                1 => Color.FromArgb(255, 68, 68),   
+                2 => Color.FromArgb(68, 138, 255),   
+                3 => Color.FromArgb(76, 175, 80),    
+                4 => Color.FromArgb(255, 193, 7),   
                 _ => Color.Gray
             };
 
@@ -759,16 +908,26 @@ namespace Client.Views.Forms
             if (propertyType == "Property")
             {
                 if (hasHotel)
-                    label.Text = "🏨";
+                {
+                    label.Text = "🏨 H"; 
+                }
                 else if (houseCount > 0)
-                    label.Text = $"🏠 {houseCount}";
+                {
+                    label.Text = $"🏠 {houseCount}"; 
+                }
                 else
+                {
                     label.Text = $"P{ownerId}";
+                }
             }
             else if (propertyType == "RailRoad")
-                label.Text = "🚂";
+            {
+                label.Text = $"🚂 P{ownerId}";
+            }
             else if (propertyType == "Utility")
-                label.Text = "⚡";
+            {
+                label.Text = $"⚡ P{ownerId}";
+            }
         }
 
 
@@ -782,7 +941,8 @@ namespace Client.Views.Forms
                 Font = new Font("Arial", 10, FontStyle.Bold),
                 Text = "🔒",
                 TextAlign = ContentAlignment.MiddleCenter,
-                Visible = false
+                Visible = false,
+                Location = new Point(0, 0)
             };
         }
 
@@ -797,12 +957,24 @@ namespace Client.Views.Forms
             {
                 indicator = CreateJailIndicator(playerId);
                 _jailIndicators[playerId] = indicator;
-                token.Parent.Controls.Add(indicator);
+
+                if (token.Parent != null)
+                {
+                    token.Parent.Controls.Add(indicator);
+                    indicator.BringToFront();
+                }
             }
 
-            indicator.Location = new Point(token.Left + token.Width - 20, token.Top);
-            indicator.Visible = inJail;
-            indicator.BringToFront();
+            if (inJail)
+            {
+                indicator.Location = new Point(token.Left + token.Width - 20, token.Top);
+                indicator.Visible = true;
+                indicator.BringToFront();
+            }
+            else
+            {
+                indicator.Visible = false;
+            }
         }
 
 

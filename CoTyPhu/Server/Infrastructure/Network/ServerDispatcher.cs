@@ -108,6 +108,54 @@ namespace Server.Infrastructure.Network
             _accountRepo = new AccountRepo(db);
             _matchRepo = new MatchRepo(db);
             _playerRepo = new PlayerRepo(db);
+
+            flow.OnDrawCard = async (match, playerId, cardType, cardIndex, description) =>
+            {
+                Console.WriteLine($"[OnDrawCard] Starting delay for player {playerId}, card {cardType}_{cardIndex}");
+
+                await Task.Delay(1500);
+
+                Console.WriteLine($"[OnDrawCard] Broadcasting DrawCardEvent for player {playerId}");
+                BroadcastDrawCard(match, playerId, cardType, cardIndex, description);
+                Console.WriteLine($"[OnDrawCard] Broadcast completed");
+            };
+
+            // ✅ ĐĂNG KÝ CALLBACK để broadcast jail event
+            flow.OnPlayerJailed = (match, player, reason, fromTile) =>
+            {
+                BroadcastPlayerJailed(match, player, reason, fromTile);
+            };
+
+            // ✅ ĐĂNG KÝ CALLBACK để broadcast movement từ card
+            flow.OnPlayerMoved = (match, player, fromTile, toTile) =>
+            {
+                Console.WriteLine($"[OnPlayerMoved] Player {player.PlayerId} moved by card from {fromTile} to {toTile}");
+
+                // ✅ CHECK ĐI QUA GO (tile 0) KHI DI CHUYỂN TỪ CARD
+                bool passedGo = toTile < fromTile && toTile != 10; // Không tính khi vào tù (tile 10)
+                if (passedGo)
+                {
+                    int moneyBefore = player.Money;
+                    player.Money += 200;
+                    BroadcastMoneyChanged(match, player.PlayerId, 200, player.Money);
+                    Console.WriteLine($"[OnPlayerMoved] Player {player.PlayerId} passed GO from card, received $200");
+                }
+
+                // Broadcast PlayerMovedEvent với Roll1=0, Roll2=0 và FromTile/ToTile
+                BroadcastRoom(match.MatchId, Wrap(
+                    MessageType.PlayerMovedEvent,
+                    new PlayerMoveEvent
+                    {
+                        PlayerId = player.PlayerId,
+                        Roll1 = 0,
+                        Roll2 = 0,
+                        FromTile = fromTile,
+                        ToTile = toTile
+                    },
+                    match.MatchId,
+                    null
+                ));
+            };
         }
 
         public Task<MessageEnvelope> DispatchAsync(MessageEnvelope req)
@@ -452,17 +500,13 @@ namespace Server.Infrastructure.Network
             if (match.IsMatch == 1)
                 return MakeError("Match already started");
 
-            // 🔥 LẤY HOST TỪ SQL
             int hostFromDb = _matchRepo.GetTurn(match.MatchId);
 
-            // 🔥 CHỈ HOST ĐƯỢC START
             if (req.PlayerId != hostFromDb)
                 return MakeError("Only host can start");
 
-            // ===== START MATCH =====
             match.IsMatch = 1;
 
-            // sync RAM
             match.CurrentTurnPlayerId = hostFromDb;
 
             _matchRepo.StartMatch(match.MatchId);
@@ -504,7 +548,6 @@ namespace Server.Infrastructure.Network
             }
         }
         
-        // ✅ BROADCAST MONEY CHANGED EVENT
         private void BroadcastMoneyChanged(MatchState match, int playerId, int change, int currentMoney)
         {
             BroadcastRoom(match.MatchId, Wrap(
@@ -538,7 +581,6 @@ namespace Server.Infrastructure.Network
             int dice1 = Random.Shared.Next(1, 7);
             int dice2 = Random.Shared.Next(1, 7);
             bool isDouble = dice1 == dice2;
-
 
             int streak = GetStreak(match, player);
             streak = isDouble ? streak + 1 : 0;
@@ -586,52 +628,100 @@ namespace Server.Infrastructure.Network
 
                 AutoLiquidateToCoverDebt(match, player);
 
-                if (match.WaitingForBuyDecision && match.PendingTileIndex == tileIndex)
+
+                if (match.Properties.TryGetValue(tileIndex, out var property))
                 {
-                    if (!match.Properties.TryGetValue(tileIndex, out var property))
-                        goto END_TURN;
-
-                    if (!_connections.TryGetValue(player.AccountId, out var conn))
-                        goto END_TURN;
-
-                    bool isUpgrade = property.PlayerOwnerId == player.PlayerId &&
-                        property.type == PropertyType.Property && !property.hasHotel;
-
-                    int price;
-
-                    if (isUpgrade)
+                    if (property.PlayerOwnerId.HasValue &&
+                        property.PlayerOwnerId.Value != player.PlayerId)
                     {
-                        price = property.houseCount < 4
-                            ? property.housePrice
-                            : property.hotelPrice;
-                    }
-                    else
-                    {
-                        price = property.type switch
+                        var owner = match.Players.Values
+                            .FirstOrDefault(p => p.PlayerId == property.PlayerOwnerId.Value);
+
+                        if (owner != null && !owner.IsBankrupt)
                         {
-                            PropertyType.Property => property.landPrice,
-                            PropertyType.RailRoad => property.RailRoadBuyPrice,
-                            PropertyType.Utility => property.UtilityBuyPrice,
-                            _ => 0
-                        };
+                            int rent = 0;
+
+                            switch (property.type)
+                            {
+                                case PropertyType.Property:
+                                    if (property.hasHotel)
+                                    {
+                                        rent = property.rentPrice[5]; 
+                                    }
+                                    else
+                                    {
+                                        rent = property.rentPrice[property.houseCount];
+                                    }
+                                    break;
+
+                                case PropertyType.RailRoad:
+                                    int railCount = match.Properties.Values.Count(p =>
+                                        p.type == PropertyType.RailRoad &&
+                                        p.PlayerOwnerId == owner.PlayerId);
+
+                                    rent = property.RailRoadRentPrice[railCount - 1];
+                                    break;
+
+                                case PropertyType.Utility:
+                                    int utilityCount = match.Properties.Values.Count(p =>
+                                        p.type == PropertyType.Utility &&
+                                        p.PlayerOwnerId == owner.PlayerId);
+
+                                    int diceSum = d1 + d2;
+                                    rent = diceSum * property.UtilityMultiply[Math.Clamp(utilityCount - 1, 0, 1)];
+                                    break;
+                            }
+
+                            player.Money -= rent;
+                            owner.Money += rent;
+
+                            BroadcastMoneyChanged(match, player.PlayerId, -rent, player.Money);
+                            BroadcastMoneyChanged(match, owner.PlayerId, +rent, owner.Money);
+
+                            AutoLiquidateToCoverDebt(match, player);
+                        }
+
+                        return; 
                     }
 
-                    _ = conn.SendAsync(
-                        Wrap(
-                            MessageType.AskBuyPropertyEvent,
-                            new AskBuyPropertyEvent
-                            {
-                                TileIndex = tileIndex,
-                                Name = ServerState.Board[tileIndex].name,
-                                Price = price,
-                                IsAuction = isUpgrade 
-                            },
-                            match.MatchId,
-                            player.PlayerId
-                        )
-                    );
+                    if (match.WaitingForBuyDecision &&
+                        match.PendingTileIndex == tileIndex)
+                    {
+                        if (!_connections.TryGetValue(player.AccountId, out var conn))
+                            return;
 
-                    return;
+                        bool isUpgrade =
+                            property.PlayerOwnerId == player.PlayerId &&
+                            property.type == PropertyType.Property &&
+                            !property.hasHotel;
+
+                        int price = isUpgrade
+                            ? (property.houseCount < 4 ? property.housePrice : property.hotelPrice)
+                            : property.type switch
+                            {
+                                PropertyType.Property => property.landPrice,
+                                PropertyType.RailRoad => property.RailRoadBuyPrice,
+                                PropertyType.Utility => property.UtilityBuyPrice,
+                                _ => 0
+                            };
+
+                        _ = conn.SendAsync(
+                            Wrap(
+                                MessageType.AskBuyPropertyEvent,
+                                new AskBuyPropertyEvent
+                                {
+                                    TileIndex = tileIndex,
+                                    Name = ServerState.Board[tileIndex].name,
+                                    Price = price,
+                                    IsAuction = isUpgrade
+                                },
+                                match.MatchId,
+                                player.PlayerId
+                            )
+                        );
+
+                        return;
+                    }
                 }
 
             END_TURN:
@@ -743,7 +833,9 @@ namespace Server.Infrastructure.Network
 
                 return Wrap(
                     MessageType.PropertyUpdatedEvent,
-                    new { Success = false },
+                    new PropertyUpdatedEvent
+                    {
+                    },
                     match.MatchId,
                     req.PlayerId
                 );
@@ -751,16 +843,80 @@ namespace Server.Infrastructure.Network
 
             int moneyBefore = player.Money;
 
+            // ✅ LƯU PENDING TILE INDEX TRƯỚC KHI RESET
+            int? pendingTile = match.PendingTileIndex;
+
+            // ✅ CHECK TIỀN TRƯỚC KHI MUA
+            if (pendingTile.HasValue && match.Properties.TryGetValue(pendingTile.Value, out var property))
+            {
+                int requiredMoney = 0;
+                string actionName = "";
+
+                if (property.PlayerOwnerId == null)
+                {
+                    // Mua đất mới
+                    requiredMoney = property.type switch
+                    {
+                        PropertyType.Property => property.landPrice,
+                        PropertyType.RailRoad => property.RailRoadBuyPrice,
+                        PropertyType.Utility => property.UtilityBuyPrice,
+                        _ => 0
+                    };
+                    actionName = "mua";
+                }
+                else if (property.PlayerOwnerId == player.PlayerId && property.type == PropertyType.Property && !property.hasHotel)
+                {
+                    // Nâng cấp
+                    requiredMoney = property.houseCount < 4 ? property.housePrice : property.hotelPrice;
+                    actionName = property.houseCount < 4 ? "xây nhà" : "xây khách sạn";
+                }
+
+                if (player.Money < requiredMoney)
+                {
+                    match.WaitingForBuyDecision = false;
+                    match.PendingTileIndex = null;
+
+                    return Wrap(
+                        MessageType.PropertyUpdatedEvent,
+                        new PropertyUpdatedEvent
+                        {
+                            PropertyTileIndex = pendingTile,
+                            PlayerId = player.PlayerId,
+                        },
+                        match.MatchId,
+                        req.PlayerId
+                    );
+                }
+            }
+
             bool bought = flow.BuyTile(match, player);
 
             match.WaitingForBuyDecision = false;
             match.PendingTileIndex = null;
 
             if (!bought)
-                return MakeError("Buy property failed");
+            {
+                return Wrap(
+                    MessageType.PropertyUpdatedEvent,
+                    new PropertyUpdatedEvent
+                    {
+                        PropertyTileIndex = pendingTile,
+                        PlayerId = player.PlayerId,
+                    },
+                    match.MatchId,
+                    req.PlayerId
+                );
+            }
 
             int moneyChange = player.Money - moneyBefore;
             BroadcastMoneyChanged(match, player.PlayerId, moneyChange, player.Money);
+
+            // ✅ LẤY PROPERTY THEO PENDING TILE INDEX
+            if (pendingTile.HasValue &&
+                match.Properties.TryGetValue(pendingTile.Value, out var boughtProperty))
+            {
+                BroadcastPropertyOwnershipChanged(match, boughtProperty);
+            }
 
             BroadcastRoom(
                 match.MatchId,
@@ -768,8 +924,8 @@ namespace Server.Infrastructure.Network
                     MessageType.PropertyUpdatedEvent,
                     new PropertyUpdatedEvent
                     {
-                        PropertyTileIndex = player.Position,
-                        PlayerId = player.PlayerId
+                        PropertyTileIndex = pendingTile ?? player.Position,
+                        PlayerId = player.PlayerId,
                     },
                     match.MatchId,
                     null
@@ -778,10 +934,37 @@ namespace Server.Infrastructure.Network
 
             return Wrap(
                 MessageType.PropertyUpdatedEvent,
-                new { Success = true },
+                new PropertyUpdatedEvent
+                {
+                },
                 match.MatchId,
                 req.PlayerId
             );
+        }
+
+        private void BroadcastPropertyOwnershipChanged(MatchState match, PropertyState property)
+        {
+            string propertyType = property.type switch
+            {
+                PropertyType.Property => "Property",
+                PropertyType.RailRoad => "RailRoad",
+                PropertyType.Utility => "Utility",
+                _ => "Unknown"
+            };
+
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.PropertyOwnershipChangedEvent,
+                new PropertyOwnershipChangedEvent
+                {
+                    TileIndex = property.TileIndex,
+                    OwnerId = property.PlayerOwnerId,
+                    HouseCount = property.houseCount,
+                    HasHotel = property.hasHotel,
+                    PropertyType = propertyType
+                },
+                match.MatchId,
+                null
+            ));
         }
 
         private void HandleChanceCard(MatchState match, PlayerState player)
@@ -978,6 +1161,22 @@ namespace Server.Infrastructure.Network
         }
 
 
+        private void BroadcastDrawCard(MatchState match, int playerId, string cardType, int cardIndex, string description)
+        {
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.DrawCardEvent,
+                new DrawCardEvent
+                {
+                    PlayerId = playerId,
+                    CardType = cardType,
+                    CardIndex = cardIndex,
+                    Description = description
+                },
+                match.MatchId,
+                null
+            ));
+        }
+
         private void AutoLiquidateToCoverDebt(MatchState match, PlayerState player)
         {
             if (player.Money >= 0) return;
@@ -1002,6 +1201,8 @@ namespace Server.Infrastructure.Network
                         MessageType.PropertyUpdatedEvent,
                         new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = (int)prop.PlayerOwnerId },
                         match.MatchId, null));
+
+                    BroadcastPropertyOwnershipChanged(match, prop);
                 }
             }
 
@@ -1016,6 +1217,8 @@ namespace Server.Infrastructure.Network
                         MessageType.PropertyUpdatedEvent,
                         new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = (int)prop.PlayerOwnerId },
                         match.MatchId, null));
+
+                    BroadcastPropertyOwnershipChanged(match, prop);
                 }
             }
 
@@ -1043,13 +1246,13 @@ namespace Server.Infrastructure.Network
                     MessageType.PropertyUpdatedEvent,
                     new PropertyUpdatedEvent { PropertyTileIndex = prop.TileIndex, PlayerId = 0 },
                     match.MatchId, null));
+
+                BroadcastPropertyOwnershipChanged(match, prop);
             }
 
-            // 4) vẫn âm => phá sản
             if (player.Money < 0)
             {
                 player.IsBankrupt = true;
-                // (tuỳ bạn) có thể broadcast 1 event phá sản sau này
             }
         }
 
@@ -1124,6 +1327,24 @@ namespace Server.Infrastructure.Network
                 req.PlayerId
             );
         }
+
+
+        private void BroadcastPlayerJailed(MatchState match, PlayerState player, string reason, int fromTile)
+        {
+            BroadcastRoom(match.MatchId, Wrap(
+                MessageType.PlayerJailedEvent,
+                new PlayerJailedEvent
+                {
+                    PlayerId = player.PlayerId,
+                    Reason = reason,
+                    FromTile = fromTile,
+                    ToTile = JailTileIndex
+                },
+                match.MatchId,
+                null
+            ));
+        }
+
         #endregion
 
         #region Helpers
@@ -1177,7 +1398,7 @@ namespace Server.Infrastructure.Network
         private static readonly Dictionary<string, (string otp, DateTime exp, bool verified)> _otp = new();
 
 
-private static void SendOtpEmail(string toEmail, string otp)
+    private static void SendOtpEmail(string toEmail, string otp)
     {
         string host = ConfigurationManager.AppSettings["SMTP_HOST"];
         int port = int.Parse(ConfigurationManager.AppSettings["SMTP_PORT"]);
@@ -1238,6 +1459,7 @@ Nếu bạn không yêu cầu, hãy bỏ qua email này.
 
             SendOtpEmail(email, otp); // 🔥 BẮT BUỘC
         }
+
 
         #endregion
 

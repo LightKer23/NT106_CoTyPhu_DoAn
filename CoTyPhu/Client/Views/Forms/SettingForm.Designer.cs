@@ -94,7 +94,6 @@
             splitMain.Dock = DockStyle.Fill;
             splitMain.FixedPanel = FixedPanel.Panel1;
             splitMain.Location = new Point(0, 0);
-            splitMain.Margin = new Padding(5);
             splitMain.Name = "splitMain";
             // 
             // splitMain.Panel1
@@ -106,9 +105,8 @@
             // 
             splitMain.Panel2.BackColor = Color.White;
             splitMain.Panel2.Controls.Add(tabMain);
-            splitMain.Size = new Size(1462, 832);
-            splitMain.SplitterDistance = 374;
-            splitMain.SplitterWidth = 6;
+            splitMain.Size = new Size(900, 520);
+            splitMain.SplitterDistance = 230;
             splitMain.TabIndex = 0;
             // 
             // pnlMenu
@@ -119,10 +117,9 @@
             pnlMenu.Controls.Add(btnEditInfo);
             pnlMenu.Dock = DockStyle.Fill;
             pnlMenu.Location = new Point(0, 0);
-            pnlMenu.Margin = new Padding(5);
             pnlMenu.Name = "pnlMenu";
-            pnlMenu.Padding = new Padding(20, 19, 20, 19);
-            pnlMenu.Size = new Size(374, 832);
+            pnlMenu.Padding = new Padding(12);
+            pnlMenu.Size = new Size(230, 520);
             pnlMenu.TabIndex = 0;
             // 
             // btnLogout
@@ -133,10 +130,9 @@
             btnLogout.FlatStyle = FlatStyle.Flat;
             btnLogout.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             btnLogout.ForeColor = Color.White;
-            btnLogout.Location = new Point(20, 743);
-            btnLogout.Margin = new Padding(5);
+            btnLogout.Location = new Point(12, 464);
             btnLogout.Name = "btnLogout";
-            btnLogout.Size = new Size(334, 70);
+            btnLogout.Size = new Size(206, 44);
             btnLogout.TabIndex = 0;
             btnLogout.Text = "Đăng xuất";
             btnLogout.UseVisualStyleBackColor = false;
@@ -149,10 +145,10 @@
             btnEditInfo.FlatStyle = FlatStyle.Flat;
             btnEditInfo.Font = new Font("Segoe UI", 10F);
             btnEditInfo.ForeColor = Color.FromArgb(192, 0, 0);
-            btnEditInfo.Location = new Point(20, 19);
-            btnEditInfo.Margin = new Padding(0, 0, 0, 16);
+            btnEditInfo.Location = new Point(12, 12);
+            btnEditInfo.Margin = new Padding(0, 0, 0, 10);
             btnEditInfo.Name = "btnEditInfo";
-            btnEditInfo.Size = new Size(334, 70);
+            btnEditInfo.Size = new Size(206, 44);
             btnEditInfo.TabIndex = 2;
             btnEditInfo.Text = "Chỉnh sửa thông tin";
             btnEditInfo.UseVisualStyleBackColor = false;
@@ -163,10 +159,9 @@
             tabMain.Controls.Add(tabHistory);
             tabMain.Dock = DockStyle.Fill;
             tabMain.Location = new Point(0, 0);
-            tabMain.Margin = new Padding(5);
             tabMain.Name = "tabMain";
             tabMain.SelectedIndex = 0;
-            tabMain.Size = new Size(1082, 832);
+            tabMain.Size = new Size(666, 520);
             tabMain.TabIndex = 0;
             // 
             // tabInfo
@@ -176,11 +171,10 @@
             tabInfo.Controls.Add(flpInfoActions);
             tabInfo.Controls.Add(grpAccount);
             tabInfo.Controls.Add(lblTitleInfo);
-            tabInfo.Location = new Point(8, 46);
-            tabInfo.Margin = new Padding(5);
+            tabInfo.Location = new Point(4, 29);
             tabInfo.Name = "tabInfo";
-            tabInfo.Padding = new Padding(29);
-            tabInfo.Size = new Size(1066, 778);
+            tabInfo.Padding = new Padding(18);
+            tabInfo.Size = new Size(658, 487);
             tabInfo.TabIndex = 0;
             tabInfo.Text = "Thông tin";
             // 
@@ -191,11 +185,10 @@
             flpInfoActions.Controls.Add(btnCancelEdit);
             flpInfoActions.Dock = DockStyle.Top;
             flpInfoActions.FlowDirection = FlowDirection.RightToLeft;
-            flpInfoActions.Location = new Point(29, 451);
-            flpInfoActions.Margin = new Padding(5);
+            flpInfoActions.Location = new Point(18, 282);
             flpInfoActions.Name = "flpInfoActions";
-            flpInfoActions.Padding = new Padding(0, 13, 0, 0);
-            flpInfoActions.Size = new Size(1008, 83);
+            flpInfoActions.Padding = new Padding(0, 8, 0, 0);
+            flpInfoActions.Size = new Size(622, 52);
             flpInfoActions.TabIndex = 0;
             // 
             // btnSaveInfo
@@ -203,10 +196,9 @@
             btnSaveInfo.BackColor = Color.White;
             btnSaveInfo.Enabled = false;
             btnSaveInfo.FlatStyle = FlatStyle.Flat;
-            btnSaveInfo.Location = new Point(824, 18);
-            btnSaveInfo.Margin = new Padding(5);
+            btnSaveInfo.Location = new Point(509, 11);
             btnSaveInfo.Name = "btnSaveInfo";
-            btnSaveInfo.Size = new Size(179, 54);
+            btnSaveInfo.Size = new Size(110, 34);
             btnSaveInfo.TabIndex = 0;
             btnSaveInfo.Text = "Lưu";
             btnSaveInfo.UseVisualStyleBackColor = false;
@@ -216,10 +208,9 @@
             btnCancelEdit.BackColor = SystemColors.ButtonHighlight;
             btnCancelEdit.Enabled = false;
             btnCancelEdit.FlatStyle = FlatStyle.Flat;
-            btnCancelEdit.Location = new Point(635, 18);
-            btnCancelEdit.Margin = new Padding(5);
+            btnCancelEdit.Location = new Point(393, 11);
             btnCancelEdit.Name = "btnCancelEdit";
-            btnCancelEdit.Size = new Size(179, 54);
+            btnCancelEdit.Size = new Size(110, 34);
             btnCancelEdit.TabIndex = 1;
             btnCancelEdit.Text = "Hủy";
             btnCancelEdit.UseVisualStyleBackColor = false;
@@ -229,11 +220,10 @@
             grpAccount.Controls.Add(tblInfo);
             grpAccount.Dock = DockStyle.Top;
             grpAccount.Font = new Font("Segoe UI", 10F);
-            grpAccount.Location = new Point(29, 99);
-            grpAccount.Margin = new Padding(5);
+            grpAccount.Location = new Point(18, 62);
             grpAccount.Name = "grpAccount";
-            grpAccount.Padding = new Padding(23, 22, 23, 22);
-            grpAccount.Size = new Size(1008, 352);
+            grpAccount.Padding = new Padding(14);
+            grpAccount.Size = new Size(622, 220);
             grpAccount.TabIndex = 1;
             grpAccount.TabStop = false;
             grpAccount.Text = "Thông tin";
@@ -241,7 +231,7 @@
             // tblInfo
             // 
             tblInfo.ColumnCount = 2;
-            tblInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 228F));
+            tblInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 140F));
             tblInfo.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tblInfo.Controls.Add(lblUsernameTitle, 0, 0);
             tblInfo.Controls.Add(lblUsernameValue, 1, 0);
@@ -250,24 +240,22 @@
             tblInfo.Controls.Add(lblEmailTitle, 0, 2);
             tblInfo.Controls.Add(lblEmailValue, 1, 2);
             tblInfo.Dock = DockStyle.Fill;
-            tblInfo.Location = new Point(23, 58);
-            tblInfo.Margin = new Padding(5);
+            tblInfo.Location = new Point(14, 37);
             tblInfo.Name = "tblInfo";
             tblInfo.RowCount = 3;
-            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
-            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
-            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 88F));
-            tblInfo.Size = new Size(962, 272);
+            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
+            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
+            tblInfo.RowStyles.Add(new RowStyle(SizeType.Absolute, 55F));
+            tblInfo.Size = new Size(594, 169);
             tblInfo.TabIndex = 0;
             // 
             // lblUsernameTitle
             // 
             lblUsernameTitle.Dock = DockStyle.Fill;
             lblUsernameTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblUsernameTitle.Location = new Point(5, 0);
-            lblUsernameTitle.Margin = new Padding(5, 0, 5, 0);
+            lblUsernameTitle.Location = new Point(3, 0);
             lblUsernameTitle.Name = "lblUsernameTitle";
-            lblUsernameTitle.Size = new Size(218, 88);
+            lblUsernameTitle.Size = new Size(134, 55);
             lblUsernameTitle.TabIndex = 0;
             lblUsernameTitle.Text = "Username:";
             lblUsernameTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -276,10 +264,9 @@
             // 
             lblUsernameValue.Dock = DockStyle.Fill;
             lblUsernameValue.Font = new Font("Segoe UI", 10F);
-            lblUsernameValue.Location = new Point(233, 0);
-            lblUsernameValue.Margin = new Padding(5, 0, 5, 0);
+            lblUsernameValue.Location = new Point(143, 0);
             lblUsernameValue.Name = "lblUsernameValue";
-            lblUsernameValue.Size = new Size(724, 88);
+            lblUsernameValue.Size = new Size(448, 55);
             lblUsernameValue.TabIndex = 1;
             lblUsernameValue.Text = "(username)";
             lblUsernameValue.TextAlign = ContentAlignment.MiddleLeft;
@@ -288,10 +275,9 @@
             // 
             lblFullNameTitle.Dock = DockStyle.Fill;
             lblFullNameTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblFullNameTitle.Location = new Point(5, 88);
-            lblFullNameTitle.Margin = new Padding(5, 0, 5, 0);
+            lblFullNameTitle.Location = new Point(3, 55);
             lblFullNameTitle.Name = "lblFullNameTitle";
-            lblFullNameTitle.Size = new Size(218, 88);
+            lblFullNameTitle.Size = new Size(134, 55);
             lblFullNameTitle.TabIndex = 2;
             lblFullNameTitle.Text = "Họ tên:";
             lblFullNameTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -300,21 +286,19 @@
             // 
             txtFullName.Dock = DockStyle.Fill;
             txtFullName.Font = new Font("Segoe UI", 10F);
-            txtFullName.Location = new Point(233, 93);
-            txtFullName.Margin = new Padding(5);
+            txtFullName.Location = new Point(143, 58);
             txtFullName.Name = "txtFullName";
             txtFullName.ReadOnly = true;
-            txtFullName.Size = new Size(724, 43);
+            txtFullName.Size = new Size(448, 30);
             txtFullName.TabIndex = 3;
             // 
             // lblEmailTitle
             // 
             lblEmailTitle.Dock = DockStyle.Fill;
             lblEmailTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            lblEmailTitle.Location = new Point(5, 176);
-            lblEmailTitle.Margin = new Padding(5, 0, 5, 0);
+            lblEmailTitle.Location = new Point(3, 110);
             lblEmailTitle.Name = "lblEmailTitle";
-            lblEmailTitle.Size = new Size(218, 96);
+            lblEmailTitle.Size = new Size(134, 59);
             lblEmailTitle.TabIndex = 4;
             lblEmailTitle.Text = "Email:";
             lblEmailTitle.TextAlign = ContentAlignment.MiddleLeft;
@@ -323,10 +307,9 @@
             // 
             lblEmailValue.Dock = DockStyle.Fill;
             lblEmailValue.Font = new Font("Segoe UI", 10F);
-            lblEmailValue.Location = new Point(233, 176);
-            lblEmailValue.Margin = new Padding(5, 0, 5, 0);
+            lblEmailValue.Location = new Point(143, 110);
             lblEmailValue.Name = "lblEmailValue";
-            lblEmailValue.Size = new Size(724, 96);
+            lblEmailValue.Size = new Size(448, 59);
             lblEmailValue.TabIndex = 5;
             lblEmailValue.Text = "(email)";
             lblEmailValue.TextAlign = ContentAlignment.MiddleLeft;
@@ -336,10 +319,9 @@
             lblTitleInfo.Dock = DockStyle.Top;
             lblTitleInfo.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
             lblTitleInfo.ForeColor = Color.FromArgb(192, 0, 0);
-            lblTitleInfo.Location = new Point(29, 29);
-            lblTitleInfo.Margin = new Padding(5, 0, 5, 0);
+            lblTitleInfo.Location = new Point(18, 18);
             lblTitleInfo.Name = "lblTitleInfo";
-            lblTitleInfo.Size = new Size(1008, 70);
+            lblTitleInfo.Size = new Size(622, 44);
             lblTitleInfo.TabIndex = 2;
             lblTitleInfo.Text = "Thông tin tài khoản";
             // 
@@ -348,11 +330,10 @@
             tabHistory.BackColor = Color.White;
             tabHistory.Controls.Add(dgvHistory);
             tabHistory.Controls.Add(lblTitleHistory);
-            tabHistory.Location = new Point(8, 46);
-            tabHistory.Margin = new Padding(5);
+            tabHistory.Location = new Point(4, 29);
             tabHistory.Name = "tabHistory";
-            tabHistory.Padding = new Padding(29);
-            tabHistory.Size = new Size(1066, 778);
+            tabHistory.Padding = new Padding(18);
+            tabHistory.Size = new Size(658, 487);
             tabHistory.TabIndex = 1;
             tabHistory.Text = "Lịch sử";
             // 
@@ -363,33 +344,30 @@
             dgvHistory.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvHistory.ColumnHeadersHeight = 29;
             dgvHistory.Dock = DockStyle.Fill;
-            dgvHistory.Location = new Point(29, 99);
-            dgvHistory.Margin = new Padding(5);
+            dgvHistory.Location = new Point(18, 62);
             dgvHistory.Name = "dgvHistory";
             dgvHistory.ReadOnly = true;
             dgvHistory.RowHeadersWidth = 51;
             dgvHistory.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvHistory.Size = new Size(1008, 650);
+            dgvHistory.Size = new Size(622, 407);
             dgvHistory.TabIndex = 0;
             // 
             // lblTitleHistory
             // 
             lblTitleHistory.Dock = DockStyle.Top;
             lblTitleHistory.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
-            lblTitleHistory.Location = new Point(29, 29);
-            lblTitleHistory.Margin = new Padding(5, 0, 5, 0);
+            lblTitleHistory.Location = new Point(18, 18);
             lblTitleHistory.Name = "lblTitleHistory";
-            lblTitleHistory.Size = new Size(1008, 70);
+            lblTitleHistory.Size = new Size(622, 44);
             lblTitleHistory.TabIndex = 1;
             lblTitleHistory.Text = "Lịch sử chơi";
             // 
             // SettingForm
             // 
-            AutoScaleDimensions = new SizeF(13F, 32F);
+            AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1462, 832);
+            ClientSize = new Size(900, 520);
             Controls.Add(splitMain);
-            Margin = new Padding(5);
             Name = "SettingForm";
             ShowIcon = false;
             StartPosition = FormStartPosition.CenterScreen;

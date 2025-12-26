@@ -11,5 +11,6 @@ namespace Common.Contracts.Game
         public int PlayerId { get; set; }
 
         public int? PropertyTileIndex { get; set; }
+
     }
 }

@@ -23,6 +23,9 @@ namespace Server.Domain.GameState
         // trạng thái
         public bool IsBankrupt { get; set; }
         public bool InJail { get; set; }
+        
+        // ✅ SỐ LƯỢT CÒN LẠI TRONG TÙ (0 = không trong tù, 1-3 = số lượt còn lại)
+        public int JailTurnsRemaining { get; set; } = 0;
 
         public bool hasGetOutOfJailCard {  get; set; }
 

@@ -11,6 +11,9 @@ namespace Common.Contracts.Game
         public int PlayerId { get; set; }
         public int Roll1 { get; set; }
         public int Roll2 { get; set; }
+
+        public int? FromTile { get; set; }
+        public int? ToTile { get; set; }
     }
 
 }

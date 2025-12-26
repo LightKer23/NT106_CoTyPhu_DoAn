@@ -144,8 +144,27 @@ namespace Client.Views.Forms
 
             ClientSession.Disconnect();
 
-            var login = new LoginForm();
-            login.Show();
+            LoginForm login = null!;
+
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f is LoginForm lf)
+                {
+                    login = lf;
+                    break;
+                }
+            }
+
+            if (login == null)
+            {
+                login = new LoginForm();
+                login.Show();
+            }
+            else
+            {
+                login.Show();
+                login.BringToFront();
+            }
 
             foreach (Form f in Application.OpenForms.Cast<Form>().ToList())
             {

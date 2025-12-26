@@ -51,6 +51,8 @@ namespace Common.Constracts
         PlayerSurrenderRequest,
         PlayerSurrenderEvent,
 
+        DrawCardEvent,
+
         PropertyOwnershipChangedEvent,
 
         // ===== GAME ACTION (Client → Server) =====

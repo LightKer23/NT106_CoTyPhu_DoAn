@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Client.Services.Network;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -17,10 +18,14 @@ namespace Client.Views.Forms
             InitializeComponent();
         }
 
+        public MenuForm(int accountId)
+        {
+            InitializeComponent();
+            ClientSession.AccountID = accountId;
+        }
+
         private void btnPlayWithPlayer_Click(object sender, EventArgs e)
         {
-            this.Hide();
-
             var frm = new RoomHubForm();
             frm.Owner = this;
             frm.Show();
