@@ -17,6 +17,21 @@ namespace Client.Views.Forms
         public RoomHubForm()
         {
             InitializeComponent();
+
+            this.FormClosing += RoomHubForm_FormClosing;
+        }
+
+        private void RoomHubForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            foreach (Form f in Application.OpenForms)
+            {
+                if (f is MenuForm)
+                {
+                    f.Show();
+                    f.Activate(); 
+                    break;
+                }
+            }
         }
 
         private async void btnCreateRoom_Click(object sender, EventArgs e)
@@ -68,5 +83,9 @@ namespace Client.Views.Forms
             new ChooseCharacterForm().Show();
         }
 
+        private void RoomHubForm_Load(object sender, EventArgs e)
+        {
+
+        }
     }
 }

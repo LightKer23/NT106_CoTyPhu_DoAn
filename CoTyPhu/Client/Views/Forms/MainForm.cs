@@ -750,12 +750,40 @@ namespace Client.Views.Forms
                     case MessageType.PlayerSurrenderEvent:
                         {
                             var ev = JsonSerializer.Deserialize<PlayerSurrenderEvent>(env.Payload, JsonOpt);
+                            if (ev == null) break;
 
                             lbHistory.Items.Add($"Player {ev.PlayerId} đã chịu thua");
 
+                            foreach (ListViewItem item in lvPlayerInfo.Items)
+                            {
+                                if (item.Tag is int pid && pid == ev.PlayerId)
+                                {
+                                    lvPlayerInfo.Items.Remove(item);
+                                    break;
+                                }
+                            }
+
+                            if (_playerTokens.TryGetValue(ev.PlayerId, out var token))
+                            {
+                                token.Visible = false;
+                            }
+
+                            _playerTokens.Remove(ev.PlayerId);
+                            _playerTile.Remove(ev.PlayerId);
+                            _playerMoney.Remove(ev.PlayerId);
+                            _playerNames.Remove(ev.PlayerId);
+                            _playerInJail.Remove(ev.PlayerId);
+
+                            if (_jailIndicators.TryGetValue(ev.PlayerId, out var jail))
+                            {
+                                jail.Visible = false;
+                                jail.Dispose();
+                                _jailIndicators.Remove(ev.PlayerId);
+                            }
+
                             if (ev.PlayerId == ClientSession.PlayerID)
                             {
-                                MessageBox.Show("Bạn đã thua!");
+                                MessageBox.Show("Bạn đã thua!", "Kết quả", MessageBoxButtons.OK, MessageBoxIcon.Information);
                             }
 
                             break;
@@ -834,7 +862,18 @@ namespace Client.Views.Forms
                                 );
                             }
 
-                            this.Hide();
+                            ClientSession.MatchID = 0;
+                            ClientSession.PlayerID = 0;
+
+                            ClientSession.Tcp.OnEvent -= HandleServerEvent;
+
+                            BeginInvoke(new Action(() =>
+                            {
+                                var menu = new MenuForm(ClientSession.AccountID);
+                                menu.Show();
+                                this.Close();
+                            }));
+
                             break;
                         }
 

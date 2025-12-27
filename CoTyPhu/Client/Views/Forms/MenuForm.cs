@@ -16,18 +16,21 @@ namespace Client.Views.Forms
         public MenuForm()
         {
             InitializeComponent();
+
+            idaccount = ClientSession.AccountID;
         }
+
+        private readonly int idaccount;
 
         public MenuForm(int accountId)
         {
             InitializeComponent();
-            ClientSession.AccountID = accountId;
+            idaccount = accountId;
         }
 
         private void btnPlayWithPlayer_Click(object sender, EventArgs e)
         {
             this.Hide();
-
             var frm = new RoomHubForm();
             frm.Owner = this;
             frm.Show();
@@ -36,7 +39,7 @@ namespace Client.Views.Forms
 
         private void btnSetting_Click(object sender, EventArgs e)
         {
-            var setting = new SettingForm();
+            var setting = new SettingForm(idaccount);
             setting.Owner = this;   
             setting.ShowDialog();
         }

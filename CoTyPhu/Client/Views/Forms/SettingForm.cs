@@ -1,4 +1,5 @@
 ﻿using Client.Services.Network;
+using Common.Domain.Models.Entities;
 using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -9,17 +10,17 @@ namespace Client.Views.Forms
     {
         private bool _isEditing = false;
 
-        public SettingForm()
+        public SettingForm(int idaccount)
         {
             InitializeComponent();
 
-            // Events
             Load += SettingForm_Load;
             btnEditInfo.Click += BtnEditInfo_Click;
             btnCancelEdit.Click += BtnCancelEdit_Click;
             btnSaveInfo.Click += BtnSaveInfo_Click;
             btnLogout.Click += BtnLogout_Click;
             tabMain.SelectedIndexChanged += TabMain_SelectedIndexChanged;
+            ClientSession.AccountID = idaccount;
         }
 
 

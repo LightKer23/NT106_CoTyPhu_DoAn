@@ -27,11 +27,16 @@ namespace Client.Services.Network
             if (Tcp != null && Tcp.IsConnected)
                 return;
 
-            string host = ConfigurationManager.AppSettings["ServerHost"];
-            int port = int.Parse(ConfigurationManager.AppSettings["ServerPort"]);
+            string host = ConfigurationManager.AppSettings["ServerHost"]
+                          ?? throw new InvalidOperationException("ServerHost missing");
+            string portStr = ConfigurationManager.AppSettings["ServerPort"]
+                          ?? throw new InvalidOperationException("ServerPort missing");
 
-            // Tạo và kết nối TCP
-            Tcp = new TcpClientService();
+            int port = int.Parse(portStr);
+
+            if (Tcp == null)
+                Tcp = new TcpClientService();
+
             await Tcp.ConnectAsync(host, port);
         }
 

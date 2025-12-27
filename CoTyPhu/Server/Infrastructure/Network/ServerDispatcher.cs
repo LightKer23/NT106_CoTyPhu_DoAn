@@ -192,14 +192,20 @@ namespace Server.Infrastructure.Network
 
             var history = _playerRepo.GetHistoryByAccount(body.AccountId);
 
-            return Wrap(
-                MessageType.GetMatchHistoryResponse,
+            return new MessageEnvelope
+            {
+                MessageId = req.MessageId,          
+                Type = MessageType.GetMatchHistoryResponse,
+                MatchId = req.MatchId,
+                PlayerId = req.PlayerId,
+                Payload = JsonSerializer.Serialize(
                 new GetMatchHistoryResponse
                 {
                     Success = true,
                     History = history
-                }
-            );
+                },
+                JsonOpt
+            )};
         }
 
 
@@ -397,8 +403,6 @@ namespace Server.Infrastructure.Network
 
             _playerRepo.InsertPlayer(match.MatchId, slot, body.AccountID);
             _matchRepo.IncreasePlayer(match.MatchId);
-
-            _connections[body.AccountID] = ServerState.CurrentConnection!;
 
             BroadcastRoom(
                 match.MatchId,
@@ -744,12 +748,7 @@ namespace Server.Infrastructure.Network
             {
                 int aliveBefore = _playerRepo.CountAlive(matchId);
 
-                rank = aliveBefore;
-
-                if(rank <= 1)
-                {
-                    rank = 1;
-                }
+                rank = aliveBefore <= 1 ? 1 : aliveBefore;
 
                 _playerRepo.EndPlayer(playerId, "Surrender", rank);
 
@@ -766,6 +765,7 @@ namespace Server.Infrastructure.Network
 
                 aliveAfter = aliveBefore - 1;
             }
+
             BroadcastRoom(
                 matchId,
                 Wrap(
@@ -793,12 +793,15 @@ namespace Server.Infrastructure.Network
                         new MatchEndedEvent
                         {
                             WinnerPlayerId = winner.PlayerId,
-                            Name = _accountRepo.GetById(winner.AccountId)?.DisplayName ?? $"Player {winner.PlayerId}"
+                            Name = _accountRepo.GetById(winner.AccountId)?.DisplayName
+                                   ?? $"Player {winner.PlayerId}"
                         },
                         matchId,
                         null
                     )
                 );
+
+                ServerState.Matches.Remove(matchId);
             }
 
             return Wrap(

@@ -13,7 +13,8 @@ namespace Client.Views.Forms
             InitializeComponent();
             _email = email;
 
-            label3.Text = $"Mã xác thực được gửi sang email {_email}";
+            label2.Text = $"Mã xác thực được gửi sang email\n{email}";
+            label2.TextAlign = ContentAlignment.MiddleCenter;
         }
 
         private async void btnVerify_Click(object sender, EventArgs e)
